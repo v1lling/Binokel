@@ -1,0 +1,122 @@
+[
+    {
+        "suit": "herz",
+        "value": "7",
+        "eyes": 0
+    },
+    {
+        "suit": "herz",
+        "value": "U",
+        "eyes": 2
+    },
+    {
+        "suit": "herz",
+        "value": "O",
+        "eyes": 3
+    },
+    {
+        "suit": "herz",
+        "value": "K",
+        "eyes": 4
+    },
+    {
+        "suit": "herz",
+        "value": "10",
+        "eyes": 10
+    },
+    {
+        "suit": "herz",
+        "value": "A",
+        "eyes": 11
+    },
+    {
+        "suit": "karo",
+        "value": "7",
+        "eyes": 0
+    },
+    {
+        "suit": "karo",
+        "value": "U",
+        "eyes": 2
+    },
+    {
+        "suit": "karo",
+        "value": "O",
+        "eyes": 3
+    },
+    {
+        "suit": "karo",
+        "value": "K",
+        "eyes": 4
+    },
+    {
+        "suit": "karo",
+        "value": "10",
+        "eyes": 10
+    },
+    {
+        "suit": "karo",
+        "value": "A",
+        "eyes": 11
+    },
+    {
+        "suit": "bolle",
+        "value": "7",
+        "eyes": 0
+    },
+    {
+        "suit": "bolle",
+        "value": "U",
+        "eyes": 2
+    },
+    {
+        "suit": "bolle",
+        "value": "O",
+        "eyes": 3
+    },
+    {
+        "suit": "bolle",
+        "value": "K",
+        "eyes": 4
+    },
+    {
+        "suit": "bolle",
+        "value": "10",
+        "eyes": 10
+    },
+    {
+        "suit": "bolle",
+        "value": "A",
+        "eyes": 11
+    },
+    {
+        "suit": "kreuz",
+        "value": "7",
+        "eyes": 0
+    },
+    {
+        "suit": "kreuz",
+        "value": "U",
+        "eyes": 2
+    },
+    {
+        "suit": "kreuz",
+        "value": "O",
+        "eyes": 3
+    },
+    {
+        "suit": "kreuz",
+        "value": "K",
+        "eyes": 4
+    },
+    {
+        "suit": "kreuz",
+        "value": "10",
+        "eyes": 10
+    },
+    {
+        "suit": "kreuz",
+        "value": "A",
+        "eyes": 11
+    }
+  ]

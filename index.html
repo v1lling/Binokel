@@ -1,0 +1,61 @@
+<html>
+  <head>
+    <title>A Multiplayer Game</title>
+    <style>
+      canvas {
+        width: 800px;
+        height: 600px;
+        border: 5px solid black;
+      }
+    </style>
+    <script src="/socket.io/socket.io.js"></script>
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.4.1/jquery.min.js"></script>
+
+  </head>
+  <body>
+    <input id="idInputName" value="Name">
+    Name
+    <br>
+    <input id="idInputCreateGameRoom">
+    <button id="idButtonCreateRoom" onclick="onCreateRoom()">CREATE ROOM</button>
+    <br>
+    Open Rooms:
+    <label id="idLabelRooms"></label>
+    <br>
+    <input id="idInputJoinGameRoom" value="Room">
+    <button id="idButtonJoinRoom" onclick="onJoinRoom()">JOIN ROOM</button>
+    <br>
+    <br>
+    Players:
+    <label id="idLabelRoomPlayers"></label>
+    <br>
+    Choose team:
+    <input onchange="chooseTeam(this)" type="radio" name="team" id="one" value="one" checked="true">
+    <input onchange="chooseTeam(this)" type="radio" name="team" id="two" value="two">
+    <button id="idButtonReady" onclick="onClickReady()">READY</button>
+    <br><br><br>
+
+    <button id="idButtonHandOut" onclick="onHandOut()" style='visibility:hidden'>AUSGEBE</button>
+    <button id="idButtonDabOpen" onclick="onDabOpen()" style='visibility:hidden'>DAB UFDECKE</button>
+    <br>Cards<br>
+    <div id="idDivCards">
+
+    </div>
+    <br>Dab<br>
+    <div id="idDivDab"></div>
+
+    <br><br><br>
+    <div id="idDivReiz" style='visibility:hidden'>
+        <button id="idButtonReiz" onclick="onReiz()"></button>
+        <button id="idButtonWeg" onclick="onWeg()">WEG</button>
+    </div>
+    <div >
+        <button id="idButtonMelden" onclick="onMelden()" style='visibility:hidden'>MELDE</button>
+    </div>
+
+    <div id="idDivStich">
+    </div>
+    
+</body>
+  <script src="/static/game.js"></script>
+</html>
