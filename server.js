@@ -17,19 +17,19 @@ server.listen(5000, function() {
 // global variables
 var iPlayerMin = 2;
 var oCardsRaw = fs.readFileSync('json/cards.json');
-let aBinoklDeck = JSON.parse(oCardsRaw).concat(JSON.parse(oCardsRaw));
-let aDabSize = [0, 0, 6, 6, 4];
+const aBinoklDeck = JSON.parse(oCardsRaw).concat(JSON.parse(oCardsRaw));
+let aDabSize = [0, 0, 42, 42, 4];
 var aGame = {};
 aGame["Room"] = {
     aPlayers : [],
     iCurrentDealerID : -1,
     aDab : [],
-    aCardDeck : aBinoklDeck,
+    aCardDeck : [...aBinoklDeck],
     aReizer : [],
     iReizerIdx : -1,
     iReizVal : 140,
     aGameStats : [],
-    iGameIdx : 0,
+    iGameIdx : -1,
     iStecherIdx: 0,
     aStichCards: [],
     iStichCount: 0
@@ -66,12 +66,12 @@ io.on('connection', function(socket) {
             aPlayers : [],
             iCurrentDealerID : -1,
             aDab : [],
-            aCardDeck : aBinoklDeck,
+            aCardDeck : [...aBinoklDeck],
             aReizer : [],
             iReizerIdx : -1,
             iReizVal : 140,
             aGameStats : [],
-            iGameIdx : 0,
+            iGameIdx : -1,
             iStecherIdx: 0,
             aStichCards: [],
             iStichCount: 0
@@ -98,6 +98,7 @@ io.on('connection', function(socket) {
     // GAME PLAY
     socket.on('handout', function() {
         var oGame = aGame[socket.room];
+        console.log(oGame.aCardDeck);
         oGame.aCardDeck = shuffle(oGame.aCardDeck);
         oGame.aDab = oGame.aCardDeck.splice(0, aDabSize[oGame.aPlayers.length]);
         oGame.iCardsPerPlayer = oGame.aPlayers.length > 2 ? (oGame.aCardDeck.length / oGame.aPlayers.length) : (oGame.aCardDeck.length / 3);
@@ -154,13 +155,14 @@ io.on('connection', function(socket) {
                     reizID: oGame.aReizer[0].id,
                     reizVal: oGame.iReizVal
                 }
+                console.log(oReizDone);
                 oGame.aGameStats.push(oReizDone);
                 // TODO: iterate gameidx once game is over
                 io.sockets.emit('reizdone', oReizDone);
             }
             
          }
-    });
+    }.bind(this));
 
     socket.on('dabopen', function() {
         io.sockets.emit('dabopened', aGame[socket.room].aDab);
@@ -183,6 +185,9 @@ io.on('connection', function(socket) {
             if (iOpenMelder === -1) {
                 // fertig gemeldet
                 oGame.iStecherIdx = oGame.iCurrentDealerID + 1;
+                if (oGame.iStecherIdx > oGame.aPlayers.length - 1) {
+                    oGame.iStecherIdx = 0;
+                }
                 var oFirstStecherID = oGame.aPlayers[oGame.iStecherIdx].id;
                 io.sockets.emit('darfstechen', {stecherID: oFirstStecherID, stiche: []});
             }
@@ -241,8 +246,12 @@ io.on('connection', function(socket) {
                     }
 
                 });
+                var oStich = {
+                    stiche: oGame.aStichCards
+                }
+                io.sockets.emit('darfstechen', oStich);
                 // TODO: sende geschafft oder net 
-                io.sockets.emit('roundfinish');
+                nextRound();
             }
             oGame.aStichCards = [];
         } else {
@@ -292,24 +301,53 @@ io.on('connection', function(socket) {
 
     function startGame() {
         //TODO close room so nobody can join
+        nextRound();
+    }
+
+    function nextRound() {
+        // reset players
         var oGame = aGame[socket.room];
-        oGame.iCurrentDealerID > oGame.aPlayers.length - 1 ? 0 : oGame.iCurrentDealerID++;
+        oGame.aPlayers.forEach(function(player, index) {
+            oGame.aPlayers[index].reized = false;
+            oGame.aPlayers[index].gemeldet = false;
+            oGame.aPlayers[index].stiche = [];
+        }.bind(this));
+
+        //reset game
+        oGame.iGameIdx++;
+        oGame.aReizer = [];
+        oGame.iReizerIdx = -1;
+        oGame.iReizVal = 140;
+        oGame.iStecherIdx = 0;
+        oGame.aStichCards = [];
+        oGame.iStichCount = 0;
+        oGame.aCardDeck = [...aBinoklDeck];
+        oGame.aDab = [];
+
+        console.log(oGame.iCurrentDealerID);
+        oGame.iCurrentDealerID = oGame.iCurrentDealerID + 1 > oGame.aPlayers.length - 1 ? 0 : oGame.iCurrentDealerID + 1;
+        console.log(oGame.iCurrentDealerID);
+
         var iDealerId = oGame.aPlayers[oGame.iCurrentDealerID].id;
         io.sockets.emit('dealer', iDealerId);
     }
 
     function initializeReizer() {
         var oGame = aGame[socket.room];
-        //TODO correct reiz handling for more than 2 teams
+        //TODO correct reiz handling for more than one teams
         oGame.iReizerIdx = 0;
-        oGame.aPlayers[oGame.iCurrentDealerID + 1].reized = true;
-        oGame.aPlayers[oGame.iCurrentDealerID].reized = true;
-        oGame.aReizer.push(oGame.aPlayers[oGame.iCurrentDealerID + 1]);
-        if (oGame.iCurrentDealerID + 2 > oGame.aPlayers.length - 1) {
-            oGame.aReizer.push(oGame.aPlayers[oGame.iCurrentDealerID]);
-        } else {
-            oGame.aReizer.push(oGame.aPlayers[oGame.iCurrentDealerID + 2]);
+        var firstReizerId = oGame.iCurrentDealerID + 1;
+        if (firstReizerId > oGame.aPlayers.length - 1) {
+            firstReizerId = 0;
         }
+        var secondReizerId = firstReizerId + 1;
+        if (secondReizerId > oGame.aPlayers.length - 1) {
+            secondReizerId = 0;
+        }
+        oGame.aPlayers[firstReizerId].reized = true;
+        oGame.aPlayers[secondReizerId].reized = true;
+        oGame.aReizer.push(oGame.aPlayers[firstReizerId]);
+        oGame.aReizer.push(oGame.aPlayers[secondReizerId]);
         var oReizData = {
             reizID: oGame.aReizer[oGame.iReizerIdx].id,
             reizVal: oGame.iReizVal + 10
@@ -347,11 +385,6 @@ io.on('connection', function(socket) {
           array[j] = temp
         }
         return array;
-    }
-
-    //TODO CALL THIS
-    function nextRound() {
-        // reset reized , gemeldet, iterate igameidx
     }
 });
 

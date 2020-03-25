@@ -39,7 +39,7 @@ socket.on('dabopened', function(data) {
         oCardButton.suit = data[i].suit;
         oCardButton.eyes = data[i].eyes;
         oCardButton.className = "card dabcard";
-        oCardButton.onclick = onClickCard.bind(oCardButton);
+        //oCardButton.onclick = onClickCard.bind(oCardButton);
         oDivDab.appendChild(oCardButton);
     }
     //document.getElementById("idLabelDab").innerHTML += JSON.stringify(data);
