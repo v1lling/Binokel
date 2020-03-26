@@ -66,26 +66,28 @@ io.on('connection', function(socket) {
 
     }.bind(this));
     socket.on('createroom', function(data) {
-        aGame[data.room] = {
-            aPlayers : [],
-            iCurrentDealerID : -1,
-            aDab : [],
-            aCardDeck : [...aBinoklDeck],
-            aReizer : [],
-            iReizerIdx : -1,
-            iReizVal : 140,
-            aGameStats : [],
-            iGameIdx : -1,
-            iStecherIdx: 0,
-            aStichCards: [],
-            iStichCount: 0,
-            open: true
+        if (!socket.room && !aGame[data.room]) {
+            aGame[data.room] = {
+                aPlayers : [],
+                iCurrentDealerID : -1,
+                aDab : [],
+                aCardDeck : [...aBinoklDeck],
+                aReizer : [],
+                iReizerIdx : -1,
+                iReizVal : 140,
+                aGameStats : [],
+                iGameIdx : -1,
+                iStecherIdx: 0,
+                aStichCards: [],
+                iStichCount: 0,
+                open: true
+            }
+            clearInterval(roomInterval);
+            joinRoom(data);
         }
-        clearInterval(roomInterval);
-        joinRoom(data);
     });
     socket.on('joinroom', function(data) {
-        if (aGame[data.room]) {
+        if (!socket.room && aGame[data.room]) {
             clearInterval(roomInterval);
             joinRoom(data);
         }
@@ -97,7 +99,6 @@ io.on('connection', function(socket) {
         }
     });
     socket.on('ready', function() {
-        // TODO reset ready when changing teams or someone joins room
         if (socket.room) {
             aGame[socket.room].aPlayers.find(x => x.id === socket.id).ready = true;
             if (aGame[socket.room].aPlayers.findIndex(x => x.ready === false) === -1
@@ -167,7 +168,6 @@ io.on('connection', function(socket) {
                     reizVal: oGame.iReizVal
                 }
                 oGame.aGameStats.push(oReizDone);
-                // TODO: iterate gameidx once game is over
                 io.sockets.emit('reizdone', oReizDone);
             }
             
@@ -225,7 +225,6 @@ io.on('connection', function(socket) {
                 io.sockets.emit('darfstechen', oStich);
             } else {
                 // runde vorbei
-                // TODO zeige handout an 
                 oGame.iStichCount = 0;
                 oGame.aPlayers.forEach(function(player, index) {
                     var points = 0;
@@ -245,7 +244,7 @@ io.on('connection', function(socket) {
                         if (points + gemeldet >= oGame.aGameStats[oGame.iGameIdx].reizVal) {
                             oGame.aPlayers[index].points += points;
                         } else {
-                            //TODO: verkackt, geh runter
+                            oGame.aPlayers[index].points -= oGame.aGameStats[oGame.iGameIdx].reizVal + 100;
                         }
                     } else {
                         oGame.aPlayers[index].points += points;
@@ -292,11 +291,11 @@ io.on('connection', function(socket) {
             points: 0
         }
         socket.playerInterval = setInterval(function() {
-            var sRoomPlayers = "";
+            var aDisplayRoomPlayers = [];
             aGame[socket.room].aPlayers.forEach(function(oPlayer,index) {
-                sRoomPlayers += oPlayer.name + " Team: " + oPlayer.team + " | ";
+                aDisplayRoomPlayers.push({name: oPlayer.name, team: oPlayer.team, points: oPlayer.points});
             });
-            socket.emit("roomplayers", sRoomPlayers);
+            socket.emit("roomplayers", aDisplayRoomPlayers);
         }.bind(this), 2000);
     }
 
@@ -393,10 +392,10 @@ io.on('connection', function(socket) {
 // MELDEN ENTGEGENNEHMEN
 // ZÄHLEN
 
+// anderes gemeldet anzeigen (dialog?)
 
-// STECHEN ()
+// warum roominterval nicht gecleared wenn man room joint oder erstellt
 
-// TODO
 // destroy data when lobby closed
 
 
