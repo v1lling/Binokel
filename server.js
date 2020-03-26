@@ -32,24 +32,28 @@ aGame["Room"] = {
     iGameIdx : -1,
     iStecherIdx: 0,
     aStichCards: [],
-    iStichCount: 0
+    iStichCount: 0,
+    open: true
 }
 
 // Add the WebSocket handlers
 io.on('connection', function(socket) {
     socket.room = "";
     // GAME ROOMS
-    socket.roomInterval = setInterval(function() {
-        var sOpenRooms = "";
-        Object.keys(aGame).forEach(function(key,index) {
-            sOpenRooms += key + " ";
-        });
-        io.sockets.emit('openrooms', sOpenRooms);
-    }, 100);
+    var roomInterval = setInterval(function() {
+        const aOpenRooms = Object.keys(aGame)
+            .filter(key => aGame[key].open === true)
+            .reduce((obj, key) => {
+                obj[key] = aGame[key];
+                return obj;
+            }, {});
+        io.sockets.emit('openrooms', aOpenRooms);
+    }, 1000);
 
     socket.on('disconnect', function() {
         // remove disconnected player
         if (socket.room) {
+            resetReady();
             var iPlayerIndex = aGame[socket.room].aPlayers.findIndex(x => x.id === socket.id);
             aGame[socket.room].aPlayers.splice(iPlayerIndex, 1);
             // cancel game
@@ -74,31 +78,38 @@ io.on('connection', function(socket) {
             iGameIdx : -1,
             iStecherIdx: 0,
             aStichCards: [],
-            iStichCount: 0
+            iStichCount: 0,
+            open: true
         }
+        clearInterval(roomInterval);
         joinRoom(data);
     });
     socket.on('joinroom', function(data) {
         if (aGame[data.room]) {
+            clearInterval(roomInterval);
             joinRoom(data);
         }
-    }.bind(this));
+    });
     socket.on('chooseteam', function(team) {
-        resetReady();
-        aGame[socket.room].aPlayers.find(x => x.id === socket.id).team = team;
+        if (socket.room) {
+            resetReady();
+            aGame[socket.room].aPlayers.find(x => x.id === socket.id).team = team;
+        }
     });
     socket.on('ready', function() {
         // TODO reset ready when changing teams or someone joins room
-        aGame[socket.room].aPlayers.find(x => x.id === socket.id).ready = true;
-        if (aGame[socket.room].aPlayers.findIndex(x => x.ready === false) === -1){
-            startGame();
+        if (socket.room) {
+            aGame[socket.room].aPlayers.find(x => x.id === socket.id).ready = true;
+            if (aGame[socket.room].aPlayers.findIndex(x => x.ready === false) === -1
+            && aGame[socket.room].aPlayers.length > 1){
+                startGame();
+            }
         }
     }.bind(this));
 
     // GAME PLAY
     socket.on('handout', function() {
         var oGame = aGame[socket.room];
-        console.log(oGame.aCardDeck);
         oGame.aCardDeck = shuffle(oGame.aCardDeck);
         oGame.aDab = oGame.aCardDeck.splice(0, aDabSize[oGame.aPlayers.length]);
         oGame.iCardsPerPlayer = oGame.aPlayers.length > 2 ? (oGame.aCardDeck.length / oGame.aPlayers.length) : (oGame.aCardDeck.length / 3);
@@ -155,7 +166,6 @@ io.on('connection', function(socket) {
                     reizID: oGame.aReizer[0].id,
                     reizVal: oGame.iReizVal
                 }
-                console.log(oReizDone);
                 oGame.aGameStats.push(oReizDone);
                 // TODO: iterate gameidx once game is over
                 io.sockets.emit('reizdone', oReizDone);
@@ -206,9 +216,6 @@ io.on('connection', function(socket) {
             var iWinnerIndex = oGame.aPlayers.findIndex(x => x.id === oStichWinner.playerid);
             oGame.iStecherIdx = iWinnerIndex;
             oGame.aPlayers[iWinnerIndex].stiche = oGame.aPlayers[iWinnerIndex].stiche.concat(oGame.aStichCards);
-            console.log("stich winner: " + oGame.aPlayers[iWinnerIndex].name);
-            console.log("anzahl stiche:" + oGame.iStichCount);
-            console.log("anzahl maxstiche: " + oGame.iCardsPerPlayer);
             if (oGame.iStichCount < oGame.iCardsPerPlayer) {
                 // next stich
                 var oStich = {
@@ -229,7 +236,6 @@ io.on('connection', function(socket) {
                         points += 10;
                     }
                     points = Math.round(points / 10) * 10;
-                    console.log(player.name + " stiche " + points);
                     oGame.aPlayers[index].gamestats[oGame.iGameIdx].stichval = points;
                     if (oGame.aGameStats[oGame.iGameIdx].reizID === player.id) {
                         // TODO: dab druffrechne
@@ -257,10 +263,7 @@ io.on('connection', function(socket) {
         } else {
             // stich läuft
             var oGame = aGame[socket.room];
-            console.log("hat gelegt: " + oGame.aPlayers[oGame.iStecherIdx].name);
             oGame.iStecherIdx = oGame.iStecherIdx == oGame.aPlayers.length - 1 ? 0 : oGame.iStecherIdx + 1; 
-            console.log("wird legen " + oGame.aPlayers[oGame.iStecherIdx].name);
-
             // call new stecher
             var oStich = {
                 stecherID: oGame.aPlayers[oGame.iStecherIdx].id,
@@ -275,8 +278,6 @@ io.on('connection', function(socket) {
     function joinRoom(data) {
         socket.room = data.room;
         socket.join(socket.room);
-        clearInterval(socket.roomInterval);
-        socket.roomInterval = null;
         resetReady();
         aGame[socket.room].aPlayers[aGame[socket.room].aPlayers.length] = {
             id: socket.id,
@@ -296,11 +297,11 @@ io.on('connection', function(socket) {
                 sRoomPlayers += oPlayer.name + " Team: " + oPlayer.team + " | ";
             });
             socket.emit("roomplayers", sRoomPlayers);
-        }.bind(this), 1000);
+        }.bind(this), 2000);
     }
 
     function startGame() {
-        //TODO close room so nobody can join
+        aGame[socket.room].open = false;
         nextRound();
     }
 
@@ -324,9 +325,7 @@ io.on('connection', function(socket) {
         oGame.aCardDeck = [...aBinoklDeck];
         oGame.aDab = [];
 
-        console.log(oGame.iCurrentDealerID);
         oGame.iCurrentDealerID = oGame.iCurrentDealerID + 1 > oGame.aPlayers.length - 1 ? 0 : oGame.iCurrentDealerID + 1;
-        console.log(oGame.iCurrentDealerID);
 
         var iDealerId = oGame.aPlayers[oGame.iCurrentDealerID].id;
         io.sockets.emit('dealer', iDealerId);

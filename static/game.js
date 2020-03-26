@@ -46,7 +46,7 @@ socket.on('dabopened', function(data) {
 })
 
 socket.on('openrooms', function(data) {
-    document.getElementById("idLabelRooms").innerHTML = JSON.stringify(data);
+    document.getElementById("idLabelRooms").innerHTML = JSON.stringify(Object.keys(data));
 })
 
 socket.on('roomplayers', function(data) {
