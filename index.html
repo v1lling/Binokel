@@ -3,60 +3,70 @@
     <title>A Multiplayer Game</title>
     <script src="/socket.io/socket.io.js"></script>
     <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.4.1/jquery.min.js"></script>
-
+    <link rel="stylesheet" type="text/css" href="static/styling.css">
   </head>
   <body>
     <!-- LOBBY -->
-    <div>
-      <input id="idInputName" value="Name">
+    <div id="idDivName">
       Name
-      <br>
+      <input id="idInputName" value="Name">
+      <button id="idButtonName" onclick="onEnterName()">START</button>
+      
+    </div>
+    <div id="idDivRooms" style='display: none;'>
       <input id="idInputCreateGameRoom">
       <button id="idButtonCreateRoom" onclick="onCreateRoom()">CREATE ROOM</button>
       <br>
       Open Rooms:
       <label id="idLabelRooms"></label>
-      <div id="idDivRooms"></div>
+      <div id="idDivOpenRooms"></div>
       <br>
-      <input id="idInputJoinGameRoom" value="Room">
-      <button id="idButtonJoinRoom" onclick="onJoinRoom()">JOIN ROOM</button>
-      <br>
-      <br>
-      Players:
-      <div id="idDivPlayers">
-        
-      </div>
-      <label id="idLabelRoomPlayers"></label>
+    </div>
+    <div id="idDivLobby" style='display: none'>
+      <label id="idLabelRoomname"></label>
       <br>
       Choose team:
-      <input onchange="chooseTeam(this)" type="radio" name="team" id="one" value="one" checked="true">
-      <input onchange="chooseTeam(this)" type="radio" name="team" id="two" value="two">
+      <input onchange="chooseTeam(this)" type="radio" name="team" id="1" checked="true">
+      <input onchange="chooseTeam(this)" type="radio" name="team" id="2">
       <button id="idButtonReady" onclick="onClickReady()">READY</button>
+      Players:
+      <div id="idDivPlayerLobby">
+  
+      </div>
+      <button id="idButtonStartGame" onclick="onStartGame()" style='display: none'>START</button>
+   
       <br><br><br>
     </div>
-
     <!-- GAME -->
-    <div>
-      <button id="idButtonHandOut" onclick="onHandOut()" style='visibility:hidden'>AUSGEBE</button>
-      <button id="idButtonDabOpen" onclick="onDabOpen()" style='visibility:hidden'>DAB UFDECKE</button>
-      <br>Cards<br>
-      <div id="idDivCards">
-
+    <div id="idDivGameplay" style='display: none'>
+      <div class="clGameplayPlayer section">
       </div>
-      <br>Dab<br>
-      <div id="idDivDab"></div>
 
-      <br><br><br>
-      <div id="idDivReiz" style='visibility:hidden'>
+      <div class="clGameplayMid section">
+        <div id="idDivDab"></div>
+        <div id="idDivStich"></div>
+      </div>
+
+      <div class="clGameplayActions section">
+        <button id="idButtonHandOut" onclick="onHandOut()" style='display:none'>AUSGEBE</button>
+        <button id="idButtonDabOpen" style='display:none'>DAB UFDECKE</button>      
+        <div id="idDivReiz" style='display:none'>
           <button id="idButtonReiz" onclick="onReiz()"></button>
           <button id="idButtonWeg" onclick="onWeg()">WEG</button>
-      </div>
-      <div >
-          <button id="idButtonMelden" onclick="onMelden()" style='visibility:hidden'>MELDE</button>
+        </div>
+        <div >
+          <button id="idButtonMelden" onclick="onMelden()" style='display:none'>MELDE</button>
+        </div>
       </div>
 
-      <div id="idDivStich">
+      <div class="clGameplayCards section">
+        <div id="idDivCards">
+        </div>
       </div>
+    
+      
+      
+      
     </div>
 </body>
   <script src="/static/game.js"></script>

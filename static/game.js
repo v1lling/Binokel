@@ -1,9 +1,13 @@
 
 // GLOBAL VARIABLES
 var socket = io();
+var myName = "";
 var myCards = [];
 var myStechTurn = false;
+var myDabTurn = false;
 var openRooms = [];
+var myRoom = "";
+var aDab = [];
 
 // SOCKET HANDLERS
 socket.on('message', function(data) {
@@ -12,43 +16,51 @@ socket.on('message', function(data) {
 
 socket.on('dealer', function(data) {
     if (data === socket.id) {
-        document.getElementById("idButtonHandOut").style.visibility = 'visible';
+        showElement("idButtonHandOut", "block");
     }
 })
 
 socket.on('cards', function(data) {
-    myCards = data;
+    myCards = data.cards;
     var oDivCards = document.getElementById("idDivCards");
-    for(var i in data) {
+    for(var i in data.cards) {
         var oCardButton = document.createElement("button");
-        oCardButton.textContent = data[i].suit + " " + data[i].value;
-        oCardButton.value = data[i].value;
-        oCardButton.suit = data[i].suit;
-        oCardButton.eyes = data[i].eyes;
+        oCardButton.textContent = data.cards[i].suit + " " + data.cards[i].value;
+        oCardButton.value = data.cards[i].value;
+        oCardButton.suit = data.cards[i].suit;
+        oCardButton.eyes = data.cards[i].eyes;
         oCardButton.className = "card playercard";
         oCardButton.onclick = onClickCard.bind(oCardButton);
         oDivCards.appendChild(oCardButton);
     }
+    // dab
+    aDab = data.dab;
+    var oDivDab = document.getElementById("idDivDab");
+    oDivDab.innerHTML = "";
+    for (var i in data.dab) {
+        var oCardButton = document.createElement("button");
+        oCardButton.id = "idDabCard" + i;
+        oCardButton.idx = i;
+        oCardButton.className = "card dabcard";
+        oCardButton.onclick = onClickCard.bind(oCardButton);
+        oDivDab.appendChild(oCardButton); 
+    }
+    showElement("idDivDab");
+
 })
 
 socket.on('dabopened', function(data) {
-    var oDivDab = document.getElementById("idDivDab");
-    oDivDab.innerHTML = "";
-    for(var i in data) {
-        var oCardButton = document.createElement("button");
-        oCardButton.textContent = data[i].suit + " " + data[i].value;
-        oCardButton.value = data[i].value;
-        oCardButton.suit = data[i].suit;
-        oCardButton.eyes = data[i].eyes;
-        oCardButton.className = "card dabcard";
-        //oCardButton.onclick = onClickCard.bind(oCardButton);
-        oDivDab.appendChild(oCardButton);
-    }
+    var oCardButton = document.getElementById("idDabCard" + data.idx);
+    oCardButton.open = true;
+    oCardButton.textContent = data.card.suit + " " + data.card.value;
+    oCardButton.value = data.card.value;
+    oCardButton.suit = data.card.suit;
+    oCardButton.eyes = data.card.eyes;
 })
 
 socket.on('openrooms', function(data) {
     //document.getElementById("idLabelRooms").innerHTML = JSON.stringify(Object.keys(data));
-    var oDivRooms = document.getElementById("idDivRooms");
+    var oDivRooms = document.getElementById("idDivOpenRooms");
 
     var schondrin = Object.keys(data).filter(x => Object.keys(openRooms).includes(x));
     var neu = Object.keys(data).filter(x => !Object.keys(openRooms).includes(x));
@@ -71,6 +83,7 @@ socket.on('openrooms', function(data) {
         players.setAttribute("id", "idPlayers" + room);
         var join = document.createElement("button");
         join.textContent = "JOIN";
+        join.value = room;
         join.onclick = onJoinRoom.bind(join);
         item.appendChild(roomname);
         item.appendChild(players);
@@ -86,28 +99,39 @@ socket.on('openrooms', function(data) {
 })
 
 socket.on('roomplayers', function(data) {
-    var oDivPlayers 
-   data.forEach(function(player) {
-        var oCardButton = document.createElement("button");
-        oCardButton.textContent = data[i].suit + " " + data[i].value;
-        oCardButton.value = data[i].value;
-        oCardButton.suit = data[i].suit;
-        oCardButton.eyes = data[i].eyes;
-        oCardButton.className = "card dabcard";
-        //oCardButton.onclick = onClickCard.bind(oCardButton);
-        oDivDab.appendChild(oCardButton);
-   }.bind(this));
-    // document.getElementById("idLabelRoomPlayers").innerHTML = JSON.stringify(data);
+    var oDivPlayers = document.getElementById("idDivPlayerLobby");
+    oDivPlayers.innerHTML = "";
+    data.forEach(function(player) {
+        buildLobbyPlayer(oDivPlayers, player, data.length > 3);
+    }.bind(this));
 })
 
 socket.on('resetready', function() {
-    document.getElementById("idButtonReady").style.visibility = 'visible';
+    hideElement("idButtonStartGame");
+    showElement("idButtonReady", "block");
+})
+
+socket.on('canstartgame', function() {
+    showElement("idButtonStartGame");
+})
+
+socket.on('gamestarted', function() {
+    hideElement("idDivLobby");
+    // show gameplay
+    showElement('idDivGameplay');
+})
+
+socket.on('cancel', function() {
+    hideElement("idDivGameplay");
+    // show gameplay
+    // TODO reset divgameplay so after new join everything is fine
+    showElement('idDivLobby');
 })
 
 socket.on('reizturn', function(data) {
     if (data.reizID === socket.id) {
         // du reizst
-        document.getElementById("idDivReiz").style.visibility = 'visible';
+        showElement("idDivReiz");
         document.getElementById("idButtonReiz").innerHTML = data.reizVal;
     } else {
         // jemand reizt
@@ -118,7 +142,8 @@ socket.on('reizturn', function(data) {
 socket.on('reizdone', function(data) {
     if (data.reizID === socket.id) {
         // du hast es game
-        document.getElementById("idButtonDabOpen").style.visibility = 'visible';
+        myDabTurn = true;
+        showElement("idButtonDabOpen", "block");
     } else {
         // jemand hat es game
         console.log("jemand hat reiz mit " + data.reizVal);
@@ -126,7 +151,12 @@ socket.on('reizdone', function(data) {
 })
 
 socket.on('darfmelde', function() {
-    document.getElementById("idButtonMelden").style.visibility = "visible";
+    showElement("idButtonMelden", "block");
+})
+
+socket.on('meldedone', function() {
+    hideElement("idDivDab");
+    showElement("idDivStich");
 })
 
 socket.on('darfstechen', function(data) {
@@ -151,16 +181,29 @@ socket.on('darfstechen', function(data) {
 })
 
 // BUTTON HANDLERS
+function onEnterName() {
+    myName = document.getElementById("idInputName").value;
+    removeElement("idDivName");
+    showElement("idDivRooms");
+}
 function onCreateRoom() {
     var sRoomname = document.getElementById("idInputCreateGameRoom").value;
-    var sName = document.getElementById("idInputName").value;
-    socket.emit('createroom', {room: sRoomname, name: sName});
+    if (sRoomname) {
+        socket.emit('createroom', {room: sRoomname, name: myName});
+        myRoom = sRoomname;
+        document.getElementById("idLabelRoomname").innerHTML = sRoomname;
+        removeElement("idDivRooms");
+        showElement("idDivLobby");
+    }
 }
 
-function onJoinRoom() {
-    var sRoomname = document.getElementById("idInputJoinGameRoom").value;
-    var sName = document.getElementById("idInputName").value;
-    socket.emit('joinroom', {room: sRoomname, name: sName})
+function onJoinRoom(e) {
+    var sRoomname = e.srcElement.value;
+    socket.emit('joinroom', {room: sRoomname, name: myName})
+    removeElement("idDivRooms")
+    myRoom = sRoomname;
+    document.getElementById("idLabelRoomname").innerHTML = sRoomname;
+    showElement("idDivLobby");
 }
 
 function chooseTeam(radio) {
@@ -168,33 +211,32 @@ function chooseTeam(radio) {
 }
 
 function onClickReady() {
-    document.getElementById("idButtonReady").style.visibility = 'hidden';
+    hideElement("idButtonReady");
     socket.emit('ready');
 }
 
+function onStartGame() {
+    socket.emit('startgame');
+    // close lobby view
+}
+
 function onHandOut() {
-    document.getElementById("idButtonHandOut").style.visibility = 'hidden';
+    hideElement("idButtonHandOut");
     socket.emit('handout');
 }
 
 function onReiz() {
-    document.getElementById("idDivReiz").style.visibility = 'hidden';
+    hideElement("idDivReiz");
     socket.emit('reizval');
 }
 
 function onWeg() {
-    document.getElementById("idDivReiz").style.visibility = 'hidden';
+    hideElement("idDivReiz");
     socket.emit('reizweg');
 }
 
-function onDabOpen() {
-    document.getElementById("idButtonDabOpen").style.visibility = 'hidden';
-    document.getElementById("idButtonMelden").style.visibility = "visible";
-    socket.emit('dabopen');
-}
-
 function onMelden() {
-    document.getElementById("idButtonMelden").style.visibility = "hidden";
+    hideElement("idButtonMelden");
     socket.emit('melde', myCards);
 }
 
@@ -212,5 +254,66 @@ function onClickCard(e) {
         } else {
             // karten aussortieren
         }
+    } else if (myDabTurn) {
+        if (e.srcElement.open === true) {
+            // swap dab
+        } else {
+            aDab[e.srcElement.idx].open = true;
+            e.srcElement.open = true;
+            // open dab
+            socket.emit('dabopen', e.srcElement.idx);
+            var iClosedDab = aDab.findIndex(x => x.open == undefined);
+            if (iClosedDab === -1) {
+                // wenn alle offen
+                showElement("idButtonMelden", "block");
+                hideElement("idButtonDabOpen");
+            }
+        }
     }
+}
+
+/*
+*
+* DOM UTILS
+*
+*/
+
+function removeElement(id) {
+    var element = document.getElementById(id);
+    element.parentNode.removeChild(element);
+}
+
+function showElement(id, display) {
+    document.getElementById(id).style.display = display ? display: "flex";
+}
+
+function hideElement(id) {
+    document.getElementById(id).style.display = 'none';
+}
+
+/*
+*   ELEMENT SECTION
+*
+*/
+
+function buildLobbyPlayer(parent, player, showteam ) {
+    var playerdiv = document.createElement("div");
+    playerdiv.setAttribute("className", "player");
+    var name = document.createElement("span");
+    name.innerHTML = player.name;
+    playerdiv.appendChild(name);
+    /*
+    var points = document.createElement("span");
+    points.innerHTML = player.points;
+    playerdiv.appendChild(points);
+    */
+    if (showteam) {
+        var team = document.createElement("span");
+        team.innerHTML = player.team;
+        playerdiv.appendChild(team);
+    }
+    var ready = document.createElement("span");
+    ready.innerHTML = player.ready ? "READY" : "";
+    playerdiv.appendChild(ready);
+    parent.appendChild(playerdiv);
 }

@@ -18,7 +18,7 @@ server.listen(5000, function() {
 var iPlayerMin = 2;
 var oCardsRaw = fs.readFileSync('json/cards.json');
 const aBinoklDeck = JSON.parse(oCardsRaw).concat(JSON.parse(oCardsRaw));
-let aDabSize = [0, 0, 42, 42, 4];
+let aDabSize = [0, 0, 6, 6, 4];
 var aGame = {};
 aGame["Room"] = {
     aPlayers : [],
@@ -61,6 +61,12 @@ io.on('connection', function(socket) {
                 clearInterval(socket.playerInterval);
                 delete aGame[socket.room];
                 socket.room = ""
+            } else {
+                // inform players about cancel
+                emitGameBroadcast("cancel");
+                // TODO: playerroom interval clearen
+                // TODO: intervalle ins FE legen
+                clearInterval(socket.playerInterval);
             }
         }
 
@@ -103,10 +109,16 @@ io.on('connection', function(socket) {
             aGame[socket.room].aPlayers.find(x => x.id === socket.id).ready = true;
             if (aGame[socket.room].aPlayers.findIndex(x => x.ready === false) === -1
             && aGame[socket.room].aPlayers.length > 1){
-                startGame();
+                socket.emit('canstartgame'); //TODO: vielleicht liebr dem lobby führer überlassen anstatt dem letzten der ready drückt
             }
         }
     }.bind(this));
+
+    socket.on('startgame', function() {
+        // tell players it has started
+        emitGameBroadcast('gamestarted');
+        startGame();
+    });
 
     // GAME PLAY
     socket.on('handout', function() {
@@ -117,7 +129,7 @@ io.on('connection', function(socket) {
         
         oGame.aPlayers.forEach(function(oPlayer) {
             var aPlayerCards = oGame.aCardDeck.splice(0, oGame.iCardsPerPlayer);
-            io.to(oPlayer.id).emit('cards', aPlayerCards);
+            io.to(oPlayer.id).emit('cards', {cards: aPlayerCards, dab: oGame.aDab});
         }.bind(this));
         initializeReizer();
     });
@@ -130,7 +142,7 @@ io.on('connection', function(socket) {
             reizID: oGame.aReizer[oGame.iReizerIdx].id,
             reizVal: oGame.iReizVal + 10
         }
-        io.sockets.emit('reizturn', oReizData);
+        emitGameBroadcast('reizturn', oReizData);
     });
 
     socket.on('reizweg', function() {
@@ -148,7 +160,7 @@ io.on('connection', function(socket) {
                 reizID: oGame.aReizer[oGame.iReizerIdx].id,
                 reizVal: oGame.iReizVal + 10
             }
-            io.sockets.emit('reizturn', oReizData);
+            emitGameBroadcast('reizturn', oReizData);
         } else {
             // check obs im selbsen team noch jemand gibt der nicht greized hat
             var iNextReizerIndex = oGame.aPlayers.findIndex(x => x.reized === false);
@@ -160,7 +172,7 @@ io.on('connection', function(socket) {
                     reizID: oGame.aReizer[oGame.iReizerIdx].id,
                     reizVal: oGame.iReizVal + 10
                 }
-                io.sockets.emit('reizturn', oReizData);
+                emitGameBroadcast('reizturn', oReizData);
             } else {
                 // nein -> set game reiz, give player opp to opendab
                 var oReizDone = {
@@ -168,14 +180,14 @@ io.on('connection', function(socket) {
                     reizVal: oGame.iReizVal
                 }
                 oGame.aGameStats.push(oReizDone);
-                io.sockets.emit('reizdone', oReizDone);
+                emitGameBroadcast('reizdone', oReizDone);
             }
             
          }
     }.bind(this));
 
-    socket.on('dabopen', function() {
-        io.sockets.emit('dabopened', aGame[socket.room].aDab);
+    socket.on('dabopen', function(i) {
+        emitGameBroadcast('dabopened', {idx: i, card: aGame[socket.room].aDab[i]});
     });
     
     socket.on('melde', function(data) {
@@ -187,7 +199,7 @@ io.on('connection', function(socket) {
         oGame.aPlayers[iPlayerIndex].gemeldet = true;
         if (socket.id === oGame.aGameStats[oGame.iGameIdx].reizID) {
             // ander dürfen melden
-            socket.broadcast.emit('darfmelde');
+            emitGameBroadcast('darfmelde', {}, true); // HERE
         } else {
             // andere gemeldet
             // haben alle gemeldet?
@@ -199,7 +211,8 @@ io.on('connection', function(socket) {
                     oGame.iStecherIdx = 0;
                 }
                 var oFirstStecherID = oGame.aPlayers[oGame.iStecherIdx].id;
-                io.sockets.emit('darfstechen', {stecherID: oFirstStecherID, stiche: []});
+                emitGameBroadcast('meldedone');
+                emitGameBroadcast('darfstechen', {stecherID: oFirstStecherID, stiche: []});
             }
         }
     });
@@ -222,7 +235,7 @@ io.on('connection', function(socket) {
                     stecherID: oGame.aPlayers[iWinnerIndex].id,
                     stiche: oGame.aStichCards
                 }
-                io.sockets.emit('darfstechen', oStich);
+                emitGameBroadcast('darfstechen', oStich);
             } else {
                 // runde vorbei
                 oGame.iStichCount = 0;
@@ -254,7 +267,7 @@ io.on('connection', function(socket) {
                 var oStich = {
                     stiche: oGame.aStichCards
                 }
-                io.sockets.emit('darfstechen', oStich);
+                emitGameBroadcast('darfstechen', oStich);
                 // TODO: sende geschafft oder net 
                 nextRound();
             }
@@ -268,12 +281,20 @@ io.on('connection', function(socket) {
                 stecherID: oGame.aPlayers[oGame.iStecherIdx].id,
                 stiche: oGame.aStichCards
             }
-            io.sockets.emit('darfstechen', oStich);
+            emitGameBroadcast('darfstechen', oStich);
         }
 
     }.bind(this));
 
     // UTILS
+    function emitGameBroadcast(message, data, exceptsender) {
+        aGame[socket.room].aPlayers.forEach(function(player) {
+            if (!exceptsender || socket.id != player.id) {
+                io.to(player.id).emit(message, data);
+            }
+        }.bind(this));
+    }
+
     function joinRoom(data) {
         socket.room = data.room;
         socket.join(socket.room);
@@ -293,7 +314,7 @@ io.on('connection', function(socket) {
         socket.playerInterval = setInterval(function() {
             var aDisplayRoomPlayers = [];
             aGame[socket.room].aPlayers.forEach(function(oPlayer,index) {
-                aDisplayRoomPlayers.push({name: oPlayer.name, team: oPlayer.team, points: oPlayer.points});
+                aDisplayRoomPlayers.push({name: oPlayer.name, team: oPlayer.team, points: oPlayer.points, ready: oPlayer.ready});
             });
             socket.emit("roomplayers", aDisplayRoomPlayers);
         }.bind(this), 2000);
@@ -327,7 +348,7 @@ io.on('connection', function(socket) {
         oGame.iCurrentDealerID = oGame.iCurrentDealerID + 1 > oGame.aPlayers.length - 1 ? 0 : oGame.iCurrentDealerID + 1;
 
         var iDealerId = oGame.aPlayers[oGame.iCurrentDealerID].id;
-        io.sockets.emit('dealer', iDealerId);
+        emitGameBroadcast('dealer', iDealerId);
     }
 
     function initializeReizer() {
@@ -351,12 +372,12 @@ io.on('connection', function(socket) {
             reizVal: oGame.iReizVal + 10
         }
 
-        io.sockets.emit('reizturn', oReizData);
+        emitGameBroadcast('reizturn', oReizData);
     }
 
     function resetReady() {
         aGame[socket.room].aPlayers.forEach(x => x.ready = false);
-        io.sockets.emit('resetready');
+        emitGameBroadcast('resetready');
     }
 
     function getStichWinnerCard(stiche) {
@@ -398,4 +419,5 @@ io.on('connection', function(socket) {
 
 // destroy data when lobby closed
 
+// nachrichten an alle senden
 
