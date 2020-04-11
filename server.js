@@ -19,6 +19,7 @@ var iPlayerMin = 2;
 var oCardsRaw = fs.readFileSync('json/cards.json');
 const aBinoklDeck = JSON.parse(oCardsRaw).concat(JSON.parse(oCardsRaw));
 let aDabSize = [0, 0, 6, 6, 4];
+let aSuits = ["herz", "kreuz", "bolle", "schippe"];
 var aGame = {};
 aGame["Room"] = {
     aPlayers : [],
@@ -27,13 +28,14 @@ aGame["Room"] = {
     aCardDeck : [...aBinoklDeck],
     aReizer : [],
     iReizerIdx : -1,
-    iReizVal : 140,
+    iReizVal : 150,
     aGameStats : [],
     iGameIdx : -1,
     iStecherIdx: 0,
     aStichCards: [],
     iStichCount: 0,
-    open: true
+    open: true,
+    sTrumpf: ""
 }
 
 // Add the WebSocket handlers
@@ -80,13 +82,14 @@ io.on('connection', function(socket) {
                 aCardDeck : [...aBinoklDeck],
                 aReizer : [],
                 iReizerIdx : -1,
-                iReizVal : 140,
+                iReizVal : 150,
                 aGameStats : [],
                 iGameIdx : -1,
                 iStecherIdx: 0,
                 aStichCards: [],
                 iStichCount: 0,
-                open: true
+                open: true,
+                sTrumpf: ""
             }
             clearInterval(roomInterval);
             joinRoom(data);
@@ -106,17 +109,41 @@ io.on('connection', function(socket) {
     });
     socket.on('ready', function() {
         if (socket.room) {
-            aGame[socket.room].aPlayers.find(x => x.id === socket.id).ready = true;
-            if (aGame[socket.room].aPlayers.findIndex(x => x.ready === false) === -1
-            && aGame[socket.room].aPlayers.length > 1){
-                socket.emit('canstartgame'); //TODO: vielleicht liebr dem lobby führer überlassen anstatt dem letzten der ready drückt
+            oGame = aGame[socket.room];
+            oGame.aPlayers.find(x => x.id === socket.id).ready = true;
+            if (oGame.aPlayers.findIndex(x => x.ready === false) === -1
+            && oGame.aPlayers.length > 1
+            && oGame.aPlayers.length < 5) {
+                if (oGame.aPlayers.length === 4) {
+                    //check teams
+                    var teamcount = oGame.aPlayers.filter((x) => x.team == 1).length;
+                    if (teamcount === 2) {
+                        io.to(oGame.aPlayers[0].id).emit('canstartgame');
+                    }
+                } else {
+                    io.to(oGame.aPlayers[0].id).emit('canstartgame');
+                }
             }
         }
     }.bind(this));
 
     socket.on('startgame', function() {
         // tell players it has started
-        emitGameBroadcast('gamestarted');
+        var oGame = aGame[socket.room];
+        if (oGame.aPlayers.length === 4) {
+            var sortedPlayers = [];
+            var firstTeam = oGame.aPlayers[0].team;
+            sortedPlayers.push(oGame.aPlayers[0]);
+            var secondTeamPlayer = oGame.aPlayers.findIndex(x => x.team != firstTeam);
+            sortedPlayers.push(oGame.aPlayers[secondTeamPlayer]);
+            var firstTeamPlayer = oGame.aPlayers.findIndex(x => x.team == firstTeam);
+            sortedPlayers.push(oGame.aPlayers[firstTeamPlayer]);
+            secondTeamPlayer = oGame.aPlayers.findIndex(x => x.team != firstTeam);
+            sortedPlayers.push(oGame.aPlayers[secondTeamPlayer]);
+
+            oGame.aPlayers = sortedPlayers;
+        }
+        emitGameBroadcast('gamestarted', oGame.aPlayers);
         startGame();
     });
 
@@ -134,13 +161,14 @@ io.on('connection', function(socket) {
         initializeReizer();
     });
 
-    socket.on('reizval', function() {
+    socket.on('reizval', function(val) {
         var oGame = aGame[socket.room];
         oGame.iReizerIdx = 1 - oGame.iReizerIdx;
-        oGame.iReizVal = oGame.iReizVal + 10;
+        oGame.iReizVal = val;
         var oReizData = {
-            reizID: oGame.aReizer[oGame.iReizerIdx].id,
-            reizVal: oGame.iReizVal + 10
+            reizIDnext: oGame.aReizer[oGame.iReizerIdx].id,
+            reizVal: val,
+            reizIDlast: oGame.aReizer[1 - oGame.iReizerIdx].id 
         }
         emitGameBroadcast('reizturn', oReizData);
     });
@@ -157,8 +185,9 @@ io.on('connection', function(socket) {
             oGame.aReizer.push(oGame.aPlayers[iNextReizerIndex]);
             oGame.iReizerIdx = 1;
             var oReizData = {
-                reizID: oGame.aReizer[oGame.iReizerIdx].id,
-                reizVal: oGame.iReizVal + 10
+                reizIDlast: socket.id,
+                reizIDnext: oGame.aReizer[oGame.iReizerIdx].id,
+                reizVal: oGame.iReizVal
             }
             emitGameBroadcast('reizturn', oReizData);
         } else {
@@ -169,8 +198,9 @@ io.on('connection', function(socket) {
                 oGame.aReizer.push(oGame.aPlayers[iNextReizerIndex]);
                 oGame.iReizerIdx = 1;
                 var oReizData = {
-                    reizID: oGame.aReizer[oGame.iReizerIdx].id,
-                    reizVal: oGame.iReizVal + 10
+                    reizIDnext: oGame.aReizer[oGame.iReizerIdx].id,
+                    reizVal: oGame.iReizVal,
+                    reizIDlast: socket.id
                 }
                 emitGameBroadcast('reizturn', oReizData);
             } else {
@@ -192,28 +222,44 @@ io.on('connection', function(socket) {
     
     socket.on('melde', function(data) {
         // save gemeldetes
+        emitGameBroadcast('gemeldet', data);
         var oGame = aGame[socket.room];
-        var iMeldePunkte = data.length //TODO: zähle gemeldetes
-        var iPlayerIndex = aGame[socket.room].aPlayers.findIndex(x => x.id === socket.id);
-        oGame.aPlayers[iPlayerIndex].gamestats.push({meldeVal: iMeldePunkte });
-        oGame.aPlayers[iPlayerIndex].gemeldet = true;
         if (socket.id === oGame.aGameStats[oGame.iGameIdx].reizID) {
-            // ander dürfen melden
-            emitGameBroadcast('darfmelde', {}, true); // HERE
+            oGame.sTrumpf = data.trumpf;
+            var iSpielhabenderIdx = oGame.aPlayers.findIndex(x => x.id === socket.id);
+            oGame.aPlayers[iSpielhabenderIdx].stiche = oGame.aPlayers[iSpielhabenderIdx].stiche.concat(data.gedruckt);
+            
+        }
+
+        var oMeldung = coundMeldung(data.gemeldet);
+        var iPlayerIndex = aGame[socket.room].aPlayers.findIndex(x => x.id === socket.id);
+        oGame.aPlayers[iPlayerIndex].gamestats.push({meldung: oMeldung });
+        oGame.aPlayers[iPlayerIndex].gemeldet = true;
+        // haben alle gemeldet?
+        var iOpenMelder = oGame.aPlayers.findIndex(x => x.gemeldet === false);
+        if (iOpenMelder != -1) {
+            // only to next melder
+            var iNextMelderIdx = iPlayerIndex + 1;
+            iNextMelderIdx = iNextMelderIdx == oGame.aPlayers.length ? 0 : iNextMelderIdx;
+            io.to(oGame.aPlayers[iNextMelderIdx].id).emit("darfmelde", {});
+            // todo: team und dann anderes team
         } else {
-            // andere gemeldet
-            // haben alle gemeldet?
-            var iOpenMelder = oGame.aPlayers.findIndex(x => x.gemeldet === false);
-            if (iOpenMelder === -1) {
-                // fertig gemeldet
-                oGame.iStecherIdx = oGame.iCurrentDealerID + 1;
-                if (oGame.iStecherIdx > oGame.aPlayers.length - 1) {
-                    oGame.iStecherIdx = 0;
-                }
-                var oFirstStecherID = oGame.aPlayers[oGame.iStecherIdx].id;
-                emitGameBroadcast('meldedone');
-                emitGameBroadcast('darfstechen', {stecherID: oFirstStecherID, stiche: []});
+            // fertig gemeldet
+            oGame.iStecherIdx = oGame.iCurrentDealerID + 1;
+            if (oGame.iStecherIdx > oGame.aPlayers.length - 1) {
+                oGame.iStecherIdx = 0;
             }
+            var oFirstStecherID = oGame.aPlayers[oGame.iStecherIdx].id;
+            var aMeldungen = [];
+            oGame.aPlayers.forEach(function(player) {
+                aMeldungen.push({
+                    meldungen: player.gamestats[oGame.iGameIdx].meldung.meldungen,
+                    punkte: player.gamestats[oGame.iGameIdx].meldung.punkte,
+                    name: player.name
+                });
+            });
+            emitGameBroadcast('meldedone', aMeldungen);
+            emitGameBroadcast('darfstechen', {stecherID: oFirstStecherID, stiche: []});
         }
     });
 
@@ -222,10 +268,10 @@ io.on('connection', function(socket) {
         // check if stich fertig, reset stich
         var oGame = aGame[socket.room];
         oGame.aStichCards.push({card: data, playerid: socket.id});
+        var oStichWinner = getStichWinnerCard(oGame.aStichCards);
         if (oGame.aStichCards.length === oGame.aPlayers.length) {
             // stich fertig
             oGame.iStichCount++;
-            var oStichWinner = getStichWinnerCard(oGame.aStichCards);
             var iWinnerIndex = oGame.aPlayers.findIndex(x => x.id === oStichWinner.playerid);
             oGame.iStecherIdx = iWinnerIndex;
             oGame.aPlayers[iWinnerIndex].stiche = oGame.aPlayers[iWinnerIndex].stiche.concat(oGame.aStichCards);
@@ -233,7 +279,9 @@ io.on('connection', function(socket) {
                 // next stich
                 var oStich = {
                     stecherID: oGame.aPlayers[iWinnerIndex].id,
-                    stiche: oGame.aStichCards
+                    stiche: oGame.aStichCards,
+                    stichwinner: oStichWinner,
+                    newstich: true
                 }
                 emitGameBroadcast('darfstechen', oStich);
             } else {
@@ -267,8 +315,8 @@ io.on('connection', function(socket) {
                 var oStich = {
                     stiche: oGame.aStichCards
                 }
-                emitGameBroadcast('darfstechen', oStich);
-                // TODO: sende geschafft oder net 
+              //  emitGameBroadcast('darfstechen', oStich);
+                // TODO: rundenende, sende stats / geschafft oder nit?
                 nextRound();
             }
             oGame.aStichCards = [];
@@ -279,7 +327,9 @@ io.on('connection', function(socket) {
             // call new stecher
             var oStich = {
                 stecherID: oGame.aPlayers[oGame.iStecherIdx].id,
-                stiche: oGame.aStichCards
+                stiche: oGame.aStichCards,
+                stichwinner: oStichWinner,
+                newstich: false
             }
             emitGameBroadcast('darfstechen', oStich);
         }
@@ -314,7 +364,7 @@ io.on('connection', function(socket) {
         socket.playerInterval = setInterval(function() {
             var aDisplayRoomPlayers = [];
             aGame[socket.room].aPlayers.forEach(function(oPlayer,index) {
-                aDisplayRoomPlayers.push({name: oPlayer.name, team: oPlayer.team, points: oPlayer.points, ready: oPlayer.ready});
+                aDisplayRoomPlayers.push({name: oPlayer.name, team: oPlayer.team, points: oPlayer.points, ready: oPlayer.ready, id: oPlayer.id});
             });
             socket.emit("roomplayers", aDisplayRoomPlayers);
         }.bind(this), 2000);
@@ -338,11 +388,12 @@ io.on('connection', function(socket) {
         oGame.iGameIdx++;
         oGame.aReizer = [];
         oGame.iReizerIdx = -1;
-        oGame.iReizVal = 140;
+        oGame.iReizVal = 150;
         oGame.iStecherIdx = 0;
         oGame.aStichCards = [];
         oGame.iStichCount = 0;
         oGame.aCardDeck = [...aBinoklDeck];
+        oGame.sTrumpf = "";
         oGame.aDab = [];
 
         oGame.iCurrentDealerID = oGame.iCurrentDealerID + 1 > oGame.aPlayers.length - 1 ? 0 : oGame.iCurrentDealerID + 1;
@@ -368,8 +419,9 @@ io.on('connection', function(socket) {
         oGame.aReizer.push(oGame.aPlayers[firstReizerId]);
         oGame.aReizer.push(oGame.aPlayers[secondReizerId]);
         var oReizData = {
-            reizID: oGame.aReizer[oGame.iReizerIdx].id,
-            reizVal: oGame.iReizVal + 10
+            reizIDlast: null,
+            reizVal: oGame.iReizVal,
+            reizIDnext: oGame.aReizer[oGame.iReizerIdx].id,
         }
 
         emitGameBroadcast('reizturn', oReizData);
@@ -380,16 +432,192 @@ io.on('connection', function(socket) {
         emitGameBroadcast('resetready');
     }
 
+    function coundMeldung(cards) {
+        var oGame = aGame[socket.room];
+        var aCounts = _createCounts(cards);
+        
+        var aMeldung = [];
+        var iPunkte = 0;
+
+        var aFamilies = findFamily();
+        aFamilies.forEach(function(family) {
+            if (family.count == 2) {
+                aMeldung.push({combi:"doppeltefamilie", suit: family.suit, points: 1500})
+            } else {
+                var points = family.suit == oGame.sTrumpf ? 150 : 100;
+                aMeldung.push({combi:"familie", suit: family.suit, points: points})
+            }
+        });
+
+        var aPaare = findPaar();
+        if (aPaare.length === 4) {
+            aMeldung.push({combi: "rundlauf", points: 240})
+        } else {
+            aPaare.forEach(function(paar) {
+                var bIsInFamily, bIsDoubleFamily = false;
+                aMeldung.forEach(function(family) {
+                    if (family.suit == paar.suit) {
+                        if (family.count == 2) {
+                            bIsDoubleFamily = true;
+                        }
+                        bIsInFamily = true;
+                    }
+                })
+                var points = paar.suit == oGame.sTrumpf ? 40 : 20;
+                if (paar.count == 1 && !bIsInFamily|| bIsInFamily && paar.count == 2 && !bIsDoubleFamily) {
+                    aMeldung.push({combi:"paar", suit: paar.suit, points: points});
+                } else if (paar.count == 2 && !bIsInFamily) {
+                    aMeldung.push({combi:"paar", suit: paar.suit, points: points});
+                    aMeldung.push({combi:"paar", suit: paar.suit, points: points});
+                }
+            });
+        }
+        
+        var iBinokel = findBinokel();
+        if (iBinokel === 1) {
+            aMeldung.push({combi: "binokel", points: 40});
+        } else if (iBinokel === 2) {
+            aMeldung.push({combi: "doppelterbinokel", points: 300});
+        }
+
+        var aGleiche = findGleiche();
+        aGleiche.forEach(function(gleiche) {
+            if (gleiche.count > 1) {
+                aMeldung.push({combi: "8gleiche", points: 1000});
+            } else {
+                var points = 0;
+                switch(gleiche.bild) {
+                    case "A":
+                        points += 100;
+                        break;
+                    case "K":
+                        points += 80;
+                        break;
+                    case "O":
+                        points += 60;
+                        break;
+                    case "U":
+                        points += 40;
+                        break;
+                }
+                aMeldung.push({combi: "4gleiche", points: points});
+            }
+        });
+
+        var iDiss = aCounts[oGame.sTrumpf + "7"];
+        if (iDiss) {
+            aMeldung.push({combi: "diss", suit: oGame.sTrumpf, points: 10});
+            if (iDiss > 1) {
+                aMeldung.push({combi: "diss", suit: oGame.sTrumpf, points: 10});
+            }
+        }
+
+        aMeldung.forEach(function(meldung) {
+            iPunkte += meldung.points;
+        })
+
+        return {meldungen: aMeldung, punkte: iPunkte};
+
+        function findFamily() {
+            aFoundFamily = [];
+            aSuits.forEach(function(suit) {
+                
+                var one = aCounts[suit+"A"] > 0 &&
+                aCounts[suit+"10"] > 0 &&
+                aCounts[suit+"K"] > 0 &&
+                aCounts[suit+"O"] > 0 &&
+                aCounts[suit+"U"] > 0;
+
+                var two = aCounts[suit+"A"] > 1 &&
+                aCounts[suit+"10"] > 1 &&
+                aCounts[suit+"K"] > 1 &&
+                aCounts[suit+"O"] > 1 &&
+                aCounts[suit+"U"] > 1;
+
+                if (two) {
+                    aFoundFamily.push({suit: suit, count: 2})
+                } else if (one) {
+                    aFoundFamily.push({suit: suit, count: 1});
+                }
+            });
+            return aFoundFamily;
+        } 
+
+       function findPaar() {
+            aFoundPaar = [];
+            aSuits.forEach(function(suit) {
+                var one = aCounts[suit+"K"] > 0 &&
+                aCounts[suit+"O"] > 0;
+
+                var two = aCounts[suit+"K"] > 1 &&
+                aCounts[suit+"O"] > 1;
+
+                if (two) {
+                    aFoundPaar.push({suit: suit, count: 2});
+                } else if (one) {
+                    aFoundPaar.push({suit: suit, count: 1});
+                }
+            });
+            return aFoundPaar;
+        } 
+
+        function findGleiche() {
+            var aBilder = ["A", "10", "K", "O", "U", "7"];
+            var aFoundGleiche = [];
+            aBilder.forEach(function(bild) {
+                var one = aCounts["herz" +  bild] > 0 &&
+                    aCounts["bolle" + bild] > 0 &&
+                    aCounts["schippe" + bild] > 0 &&
+                    aCounts["kreuz" + bild] > 0;
+                
+                var two = aCounts["herz" +  bild] > 1 &&
+                    aCounts["bolle" + bild] > 1 &&
+                    aCounts["schippe" + bild] > 1 &&
+                    aCounts["kreuz" + bild] > 1;
+
+                if (two) {
+                    aFoundGleiche.push({bild: bild, count: 2})
+                } else if (one && bild != "7" && bild != "10") {
+                    aFoundGleiche.push({bild: bild, count: 1});
+                }  
+            });
+            return aFoundGleiche;
+        }
+
+        function findBinokel() {
+            var one = aCounts["schippeO"] > 0 &&
+                aCounts["bolleU"] > 0;
+            var two = aCounts["schippeO"] > 1 &&
+                aCounts["bolleU"] > 1;
+            if (two) {
+                return 2;
+            } else if (one) {
+                return 1;
+            }
+        }
+
+        function _createCounts(arr) {
+            var counts = {};
+            for (var i = 0; i < arr.length; i++) {
+                var element = arr[i];
+                var val = element.suit + element.value;
+                counts[val] = counts[val] ? counts[val] + 1 : 1;
+            }
+            return counts;
+        }
+    }
+
     function getStichWinnerCard(stiche) {
-        //TODO check for trumpf
-        //TODO spielhabender wählt trumpf
         var winnerstich = stiche[0];
         stiche.forEach(function(stich) {
-            if (stich.card.suit === winnerstich.card.suit
-            && stich.card.eyes > winnerstich.card.eyes) {
+            if (stich.card.suit === winnerstich.card.suit) {
+                if (stich.card.eyes > winnerstich.card.eyes) {
+                    winnerstich = stich;   
+                }
+            } else if (stich.card.suit === aGame[socket.room].sTrumpf) {
                 winnerstich = stich;
             }
-        }.bind(this));
+        });
         return winnerstich;
     }
 
@@ -410,8 +638,21 @@ io.on('connection', function(socket) {
 
 // OPEN
 
-// MELDEN ENTGEGENNEHMEN
+// MELDEN ENTGEGENNEHMEN (bei nicht spielhabenden)
 // ZÄHLEN
+//
+//
+
+
+// meldungen vom team 1 anzeigen, dann team 2 melden
+
+// gedrucktes zählen (drin?)
+// fehler falls nicht gedruckt
+
+// es wird grade paar gezählt das schon in familie drin is
+
+
+// was wenn "nab" gedrückt wird, nicht gespielt werden will
 
 // anderes gemeldet anzeigen (dialog?)
 
@@ -420,4 +661,6 @@ io.on('connection', function(socket) {
 // destroy data when lobby closed
 
 // nachrichten an alle senden
+
+// beim melden kann der nicht spielhabende auch den dab anklicken zum melden lool
 

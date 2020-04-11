@@ -1,3 +1,38 @@
+@keyframes shake {
+  0% {
+    transform: translate(1px, 1px) rotate(0deg);
+  }
+  10% {
+    transform: translate(-1px, -2px) rotate(-1deg);
+  }
+  20% {
+    transform: translate(-3px, 0px) rotate(1deg);
+  }
+  30% {
+    transform: translate(3px, 2px) rotate(0deg);
+  }
+  40% {
+    transform: translate(1px, -1px) rotate(1deg);
+  }
+  50% {
+    transform: translate(-1px, 2px) rotate(-1deg);
+  }
+  60% {
+    transform: translate(-3px, 1px) rotate(0deg);
+  }
+  70% {
+    transform: translate(3px, 1px) rotate(-1deg);
+  }
+  80% {
+    transform: translate(-1px, -1px) rotate(1deg);
+  }
+  90% {
+    transform: translate(1px, 2px) rotate(0deg);
+  }
+  100% {
+    transform: translate(1px, -2px) rotate(-1deg);
+  }
+}
 #idDivGameplay {
   border: 1px solid black;
   height: 100%;
@@ -7,10 +42,14 @@
 }
 #idDivDab,
 #idDivStich {
-  display: flex;
+  display: none;
   flex-direction: row;
   justify-content: center;
   align-items: center;
+  height: 100%;
+}
+#idDivMeldungen {
+  display: none;
   height: 100%;
 }
 .section {
@@ -19,6 +58,21 @@
 }
 .clGameplayPlayer {
   height: 30%;
+}
+.clPlayerRowMulti {
+  height: 33%;
+  display: flex;
+  flex-direction: row;
+  justify-content: space-between;
+}
+.clPlayerRow {
+  height: 33%;
+  display: flex;
+  flex-direction: row;
+  justify-content: center;
+}
+.clPlayerName {
+  width: 20%;
 }
 .clGameplayMid {
   height: 30%;
@@ -32,8 +86,88 @@
   align-items: center;
 }
 .card {
+  font-size: 1.25rem;
+  font-weight: 600;
   width: 13%;
   height: 40%;
+  touch-action: manipulation;
+  background-repeat: no-repeat;
+  background-size: 50%;
+  background-position-x: center;
+  background-position-y: 10%;
+  border: 3px solid black;
+  margin: 2px;
+  border-radius: 10%;
+}
+.clInvalidCard {
+  /* Start the shake animation and make the animation last for 0.5 seconds */
+  animation: shake 0.5s;
+  /* When the animation is finished, start again */
+}
+.cardmeldestatemelden {
+  -webkit-box-shadow: inset 0px 0px 0px 5px #33ff00;
+  -moz-box-shadow: inset 0px 0px 0px 5px #33ff00;
+  box-shadow: inset 0px 0px 0px 5px #33ff00;
+}
+.cardmeldestatedrucke {
+  -webkit-box-shadow: inset 0px 0px 0px 5px #f00;
+  -moz-box-shadow: inset 0px 0px 0px 5px #f00;
+  box-shadow: inset 0px 0px 0px 5px #f00;
+}
+#idDivTrumpf {
+  display: none;
+  flex-direction: row;
+}
+.trumpfbutton.active {
+  border: 2px solid red;
+}
+.clMeldebubble {
+  color: black;
+  height: 80px;
+  width: 100px;
+  justify-content: center;
+  align-items: center;
+  display: none;
+  position: relative;
+  text-align: center;
+  background-color: #fff;
+  border: 3px solid #666;
+  -webkit-border-radius: 30px;
+  -moz-border-radius: 30px;
+  border-radius: 30px;
+  -webkit-box-shadow: 2px 2px 4px #888;
+  -moz-box-shadow: 2px 2px 4px #888;
+  box-shadow: 2px 2px 4px #888;
+}
+.clMeldebubble:before {
+  content: ' ';
+  position: absolute;
+  width: 0;
+  height: 0;
+}
+.clMeldebubble.top:before {
+  left: 30px;
+  top: -40px;
+  border: 20px solid;
+  border-color: transparent transparent white;
+}
+.clMeldebubble.left:before {
+  left: -38px;
+  top: 20px;
+  border: 20px solid;
+  border-color: transparent white transparent transparent;
+}
+.clMeldebubble.bottom:before {
+  left: 30px;
+  top: 80px;
+  border: 20px solid;
+  border-color: white transparent transparent;
+}
+.clMeldebubble.right:before {
+  left: 98px;
+  top: 20px;
+  border: 20px solid;
+  border-color: transparent transparent transparent white;
 }
 #idDivLobby {
   height: 100%;
@@ -68,9 +202,12 @@ button {
   border-radius: 3px;
 }
 body {
+  font-size: 2rem;
+  color: white;
   text-align: center;
   max-width: 450px;
   max-height: 900px;
   margin: auto;
   background-image: url("/static/background.jpg");
+  overscroll-behavior: contain;
 }
