@@ -1,4 +1,3 @@
-
 // GLOBAL VARIABLES
 var socket = io();
 var myName = "";
@@ -135,14 +134,16 @@ socket.on('cancel', function() {
 })
 
 socket.on('reizturn', function(data) {
-    //TODO: show reizvalue
     if (data.reizIDlast) {
         showReizValue(data);
+        document.getElementById("idInputReiz").value = parseInt(data.reizVal) + 10;
+    } else {
+        document.getElementById("idInputReiz").value = parseInt(data.reizVal);
     }
+
     if (data.reizIDnext === socket.id) {
         // du reizst
         showElement("idDivReiz");
-        document.getElementById("idInputReiz").value = data.reizVal;
     } 
 })
 
@@ -250,9 +251,13 @@ function onHandOut() {
     socket.emit('handout');
 }
 
+function onClickPlus() {
+    var oInput = document.getElementById("idInputReiz");
+    oInput.value = parseInt(oInput.value) + 10;
+}
+
 function onReiz() {
-    // TODO check ob reiz höher is als bisherigers
-    var reizval = document.getElementById("idInputReiz").value;
+    var reizval = parseInt(document.getElementById("idInputReiz").value);
     hideElement("idDivReiz");
     socket.emit('reizval', reizval);
 }
@@ -518,9 +523,11 @@ function showReizValue(data) {
 
     var className = aPlayerLocConfig[thePlayers.length - 2][i];
     $('#idMeldeBubble').removeClass('bottom').removeClass('top').removeClass('right').removeClass('left');
-    document.getElementById("idMeldeBubble").classList.add(className);
-    document.getElementById("idMeldeBubble").innerText = data.reizVal;
-    showElement("idMeldeBubble");
+    setTimeout(function() {
+        $("#idMeldeBubble").addClass(className);
+        document.getElementById("idMeldeBubble").innerText = data.reizVal;
+        showElement("idMeldeBubble");
+    }.bind(this), 100);
 }
 
 function compareCards(card1, card2){

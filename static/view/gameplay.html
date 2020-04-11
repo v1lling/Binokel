@@ -37,12 +37,11 @@
       <button id="idButtonHandOut" onclick="onHandOut()" style='display:none'>AUSGEBE</button>
       <button id="idButtonDabOpen" style='display:none'>DAB UFDECKE</button>      
       <div id="idDivReiz" style='display:none'>
-        <button onclick="onReiz()"></button>
         <div id="idDivReizInput" class="number">
-          <span class="minus">-</span>
-          <input id="idInputReiz" type="number" step="1"/>
-          <span class="plus">+</span>
+          <input readonly id="idInputReiz" type="text"/>
+          <button onclick="onClickPlus()" class="plus">+</button>
         </div>
+        <button onclick="onReiz()">REIZ</button>
         <button id="idButtonWeg" onclick="onWeg()">WEG</button>
       </div>
       <div >
