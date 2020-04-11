@@ -73,6 +73,11 @@
 }
 .clPlayerName {
   width: 20%;
+  display: flex;
+  justify-content: center;
+}
+#idPlayerBottom {
+  align-self: flex-end;
 }
 .clGameplayMid {
   height: 30%;
@@ -208,6 +213,6 @@ body {
   max-width: 450px;
   max-height: 900px;
   margin: auto;
-  background-image: url("/static/background.jpg");
+  background-image: url("/static/img/background.jpg");
   overscroll-behavior: contain;
 }

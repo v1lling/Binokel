@@ -1,0 +1,30 @@
+<div id="idDivName">
+    Name
+    <input id="idInputName" value="Name">
+    <button id="idButtonName" onclick="onEnterName()">START</button>
+    
+  </div>
+  <div id="idDivRooms" style='display: none;'>
+    <input id="idInputCreateGameRoom">
+    <button id="idButtonCreateRoom" onclick="onCreateRoom()">CREATE ROOM</button>
+    <br>
+    Open Rooms:
+    <label id="idLabelRooms"></label>
+    <div id="idDivOpenRooms"></div>
+    <br>
+  </div>
+  <div id="idDivLobby" style='display: none'>
+    <label id="idLabelRoomname"></label>
+    <br>
+    Choose team:
+    <input onchange="chooseTeam(this)" type="radio" name="team" id="1" checked="true">
+    <input onchange="chooseTeam(this)" type="radio" name="team" id="2">
+    <button id="idButtonReady" onclick="onClickReady()">READY</button>
+    Players:
+    <div id="idDivPlayerLobby">
+
+    </div>
+    <button id="idButtonStartGame" onclick="onStartGame()" style='display: none'>START</button>
+ 
+    <br><br><br>
+  </div>

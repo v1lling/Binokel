@@ -51,7 +51,7 @@ socket.on('cards', function(data) {
 socket.on('dabopened', function(data) {
     var oCardButton = document.getElementById("idDabCard" + data.idx);
     oCardButton.open = true;
-    oCardButton.style.backgroundImage = "url(/static/" + data.card.suit + ".png)";
+    oCardButton.style.backgroundImage = "url(/static/img/" + data.card.suit + ".png)";
     oCardButton.textContent = data.card.value;
     oCardButton.value = data.card.value;
     oCardButton.suit = data.card.suit;
@@ -187,7 +187,7 @@ socket.on('darfstechen', function(data) {
             oCardButton.suit = stich.card.suit;
             oCardButton.value = stich.card.value;
             oCardButton.eyes = stich.card.eyes;
-            oCardButton.style.backgroundImage = "url(/static/" + stich.card.suit + ".png)";
+            oCardButton.style.backgroundImage = "url(/static/img/" + stich.card.suit + ".png)";
             oCardButton.className = "card stichcard";
             oDivStich.appendChild(oCardButton);
         })
@@ -493,7 +493,7 @@ function addToMyCards(cards) {
         oCardButton.value = myCards[i].value;
         oCardButton.suit = myCards[i].suit;
         oCardButton.eyes = myCards[i].eyes;
-        oCardButton.style.backgroundImage = "url(/static/" + myCards[i].suit + ".png)";
+        oCardButton.style.backgroundImage = "url(/static/img/" + myCards[i].suit + ".png)";
         oCardButton.className = "card playercard";
         oCardButton.onclick = onClickCard.bind(oCardButton);
         oDivCards.appendChild(oCardButton);

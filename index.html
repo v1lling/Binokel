@@ -6,106 +6,14 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
     <script src="/socket.io/socket.io.js"></script>
     <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.4.1/jquery.min.js"></script>
+    <script src="static/thirdparty/csi.min.js"></script>
     <link rel="stylesheet" type="text/css" href="static/styling.css">
   </head>
   <body>
     <!-- LOBBY -->
-    <div id="idDivName">
-      Name
-      <input id="idInputName" value="Name">
-      <button id="idButtonName" onclick="onEnterName()">START</button>
-      
-    </div>
-    <div id="idDivRooms" style='display: none;'>
-      <input id="idInputCreateGameRoom">
-      <button id="idButtonCreateRoom" onclick="onCreateRoom()">CREATE ROOM</button>
-      <br>
-      Open Rooms:
-      <label id="idLabelRooms"></label>
-      <div id="idDivOpenRooms"></div>
-      <br>
-    </div>
-    <div id="idDivLobby" style='display: none'>
-      <label id="idLabelRoomname"></label>
-      <br>
-      Choose team:
-      <input onchange="chooseTeam(this)" type="radio" name="team" id="1" checked="true">
-      <input onchange="chooseTeam(this)" type="radio" name="team" id="2">
-      <button id="idButtonReady" onclick="onClickReady()">READY</button>
-      Players:
-      <div id="idDivPlayerLobby">
-  
-      </div>
-      <button id="idButtonStartGame" onclick="onStartGame()" style='display: none'>START</button>
-   
-      <br><br><br>
-    </div>
+    <div data-include="static/view/lobby.html"></div> 
     <!-- GAME -->
-    <div id="idDivGameplay" style='display: none'>
-      <div class="clGameplayPlayer section">
-        <div class="clPlayerRow">
-          <div class="clPlayerName">
-            <label id="idPlayerTop"></label>
-          </div>
-        </div>
-        <div class="clPlayerRowMulti">
-          <div class="clPlayerName">
-            <label id="idPlayerMidOne" ></label>
-          </div>
-          <div class="clTischMid">
-            <div id="idMeldeBubble" class="clMeldebubble"></div>
-          </div>
-          <div class="clPlayerName">
-            <label id="idPlayerMidTwo"></label>
-          </div>
-        </div>
-        
-        <div class="clPlayerRow">
-          <div class="clPlayerName">
-              <label id="idPlayerBottom"></label>
-          </div>
-        </div>
-
-      </div>
-
-      <div class="clGameplayMid section">
-        <div id="idDivMeldungen">
-          <button onclick="onCloseMeldungen()">CLOSE</button>
-        </div>
-        <div id="idDivDab"></div>
-        <div id="idDivStich"></div>
-      </div>
-
-      <div class="clGameplayActions section">
-        <button id="idButtonHandOut" onclick="onHandOut()" style='display:none'>AUSGEBE</button>
-        <button id="idButtonDabOpen" style='display:none'>DAB UFDECKE</button>      
-        <div id="idDivReiz" style='display:none'>
-          <button onclick="onReiz()"></button>
-          <div id="idDivReizInput" class="number">
-            <span class="minus">-</span>
-            <input id="idInputReiz" type="number" step="1"/>
-            <span class="plus">+</span>
-          </div>
-          <button id="idButtonWeg" onclick="onWeg()">WEG</button>
-        </div>
-        <div >
-          <button id="idButtonMelden" onclick="onMelden()" style='display:none'>MELDE</button>
-          <div id="idDivTrumpf">
-            <button id="idButtonTrumpfSchippe" class="trumpfbutton" value="schippe" onclick="onChooseTrumpf(this)">Schippe</button>
-            <button id="idButtonTrumpfKreuz" class="trumpfbutton" value="kreuz" onclick="onChooseTrumpf(this)">Kreuz</button>
-            <button id="idButtonTrumpfHerz" class="trumpfbutton" value="herz" onclick="onChooseTrumpf(this)">Herz</button>
-            <button id="idButtonTrumpfBolle" class="trumpfbutton" value="bolle" onclick="onChooseTrumpf(this)">Bolle</button>
-
-          </div>
-        </div>
-      </div>
-
-      <div class="clGameplayCards section">
-        <div id="idDivCards">
-        </div>
-      </div>
-      
-    </div>
+    <div data-include="static/view/gameplay.html"></div> 
 </body>
   <script src="/static/game.js"></script>
 </html>
