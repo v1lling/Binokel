@@ -31,6 +31,7 @@ socket.on('cards', function(data) {
     myGame = false;
     myTrumpf = "";
     theTrumpf = "";
+    hideElement("idReizBubble");
     //stichkarten clearen
     var oDivStich = document.getElementById('idDivStich');
     oDivStich.innerHTML = "";
@@ -177,9 +178,12 @@ socket.on('reizdone', function(data) {
     }
 })
 
-socket.on('darfmelde', function() {
-    myMeldeTurn = true;
-    showElement("idButtonMelden", "block");
+socket.on('darfmelde', function(data) {
+    if (data.id === socket.id) {
+        myMeldeTurn = true;
+        showElement("idButtonMelden", "block");
+    }
+    showCurrentZug(data.id);
 })
 
 socket.on('gemeldet', function(data) {
@@ -646,6 +650,7 @@ function showReizValue(data) {
     $('#idReizBubble').removeClass('bottom').removeClass('top').removeClass('right').removeClass('left');
     setTimeout(function() {
         $("#idReizBubble").addClass(className);
+        $("#idReizBubble").css("background-image", "");
         document.getElementById("idReizBubble").innerText = data.reizVal;
         showElement("idReizBubble");
     }.bind(this), 100);

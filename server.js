@@ -258,7 +258,8 @@ io.on('connection', function(socket) {
             // only to next melder
             var iNextMelderIdx = iPlayerIndex + 1;
             iNextMelderIdx = iNextMelderIdx == oGame.aPlayers.length ? 0 : iNextMelderIdx;
-            io.to(oGame.aPlayers[iNextMelderIdx].id).emit("darfmelde", {});
+            var iNextMelderPlayer = oGame.aPlayers[iNextMelderIdx];
+            emitGameBroadcast("darfmelde", {id: iNextMelderPlayer.id});
             // todo: team und dann anderes team
         } else {
             // fertig gemeldet
