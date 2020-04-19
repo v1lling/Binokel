@@ -31,6 +31,10 @@ socket.on('cards', function(data) {
     myGame = false;
     myTrumpf = "";
     theTrumpf = "";
+    //stichkarten clearen
+    var oDivStich = document.getElementById('idDivStich');
+    oDivStich.innerHTML = "";
+    //myCards
     addToMyCards(data.cards);
     // dab
     aDab = data.dab;
@@ -165,14 +169,12 @@ socket.on('weggegangen', function(data) {
 })
 
 socket.on('reizdone', function(data) {
+    showCurrentZug(data.reizID);
     if (data.reizID === socket.id) {
         // du hast es game
         myDabTurn = true;
         showElement("idButtonDabOpen", "block");
-    } else {
-        // jemand hat es game
-        console.log("jemand hat reiz mit " + data.reizVal);
-    } 
+    }
 })
 
 socket.on('darfmelde', function() {
@@ -183,6 +185,7 @@ socket.on('darfmelde', function() {
 socket.on('gemeldet', function(data) {
     if (data.trumpf) {
         theTrumpf = data.trumpf;
+        showTrumpf(data.trumpf);
     }
     hideElement("idDivDab");
     showMeldung(data);
@@ -270,7 +273,9 @@ function onJoinRoom(e) {
 
 function chooseTeam(button) {
     button.parentElement.childNodes.forEach(function (child) {
-        child.classList.remove("selected");
+        if (child.classList) {
+            child.classList.remove("selected");
+        }
     }.bind(this));
     $(button).addClass("selected");
     socket.emit('chooseteam', button.id);
@@ -638,12 +643,18 @@ function showReizValue(data) {
     }
 
     var className = aPlayerLocConfig[thePlayers.length - 2][i];
-    $('#idMeldeBubble').removeClass('bottom').removeClass('top').removeClass('right').removeClass('left');
+    $('#idReizBubble').removeClass('bottom').removeClass('top').removeClass('right').removeClass('left');
     setTimeout(function() {
-        $("#idMeldeBubble").addClass(className);
-        document.getElementById("idMeldeBubble").innerText = data.reizVal;
-        showElement("idMeldeBubble");
+        $("#idReizBubble").addClass(className);
+        document.getElementById("idReizBubble").innerText = data.reizVal;
+        showElement("idReizBubble");
     }.bind(this), 100);
+}
+
+function showTrumpf(trumpf) {
+    var oReizBubble = document.getElementById("idReizBubble");
+    oReizBubble.style.backgroundImage = "url(/static/img/" + trumpf + ".png)";
+    showElement("idReizBubble");
 }
 
 function showStichWin(data) {
@@ -737,13 +748,16 @@ function showGameStats() {
     for (var stat in theGameStats) {
         var oColumn = document.createElement("div");
         oColumn.innerHTML += stat + "</br>";
+        var totalPoints = 0;
         theGameStats[stat].forEach(function(playerstat) {
             if (playerstat) {
+                totalPoints += playerstat;
                 oColumn.innerHTML += playerstat + "</br>";
             } else {
                 oColumn.innerHTML += "</br>";
             }
         }.bind(this));
+        oColumn.innerHTML += "<br></br>" + totalPoints;
         oModal.appendChild(oColumn);
     }
     showElement("idModal", "flex");
