@@ -1,8 +1,90 @@
+@white: #fff;
+@gray: #9b9b9b;
+
 #idDivName {
-    height: 100%;
     width: 100%;
     display: flex;
     flex-direction: column;
     align-items: center;
-    justify-content: center;
+}
+.clLabelTitle {
+  padding-top: 7rem;
+  font-size: 7rem;
+  font-family: 'EasyRider';
+}
+
+.form__group {
+  margin-top: 2rem;
+  position: relative;
+  padding: 15px 0 0;
+  margin-top: 10px;
+  width: 50%;
+}
+
+.form__field {
+  font-family: inherit;
+  width: 100%;
+  border: 0;
+  border-bottom: 2px solid @gray;
+  outline: 0;
+//  font-size: 1.3rem;
+  font-size: inherit;
+  color: @white;
+  padding-top: 1.2rem;
+  padding-bottom: 5px;
+  background: transparent;
+  transition: border-color 0.2s;
+
+  &::placeholder {
+    color: transparent;
+  }
+
+  &:placeholder-shown ~ .form__label {
+ //   font-size: 1.3rem;
+    font-size: inherit;
+    cursor: text;
+    top: 20px;
+  }
+}
+.form_button {
+    font-family: inherit;
+    width: 100%;
+    margin-top: 2rem;
+    height: 50px;
+}
+
+.form__label {
+  position: absolute;
+  top: 0;
+  padding-top: 1rem;
+  display: block;
+  transition: 0.2s;
+  font-size: 1rem;
+  color: @gray;
+}
+
+.form__field:focus {
+  ~ .form__label {
+    position: absolute;
+    top: 0;
+    display: block;
+    transition: 0.2s;
+    font-size: 1rem;
+    color: @primary;
+    font-weight:700;    
+  }
+  ~ .form_button {
+      border-color: @primary;
+      color: @primary;
+    }
+  padding-bottom: 6px;  
+  font-weight: 700;
+  border-width: 3px;
+  border-color: @primary;
+//  border-image: linear-gradient(to right, @primary,@secondary);
+  border-image-slice: 1;
+}
+/* reset input */
+.form__field{
+  &:required,&:invalid { box-shadow:none; }
 }

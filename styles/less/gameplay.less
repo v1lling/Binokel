@@ -1,18 +1,62 @@
 
 #idDivGameplay {
     border: 1px solid black;
+    padding-left: 1rem;
+    padding-right: 1rem;
+    width: calc(100% - 2rem);
     height: 100%;
-    width: 100%;
     display: flex;
     flex-direction: column;
+    position: relative;
+}
+
+.clModal {
+    z-index: 1;
+    width: 80%;
+    height: 80%;
+    position: absolute;
+    margin: auto;
+    border: 3px solid white;
+    background: rgba(0, 0, 0, 0.8);
+    left: 10%;
+    top: 10%;
+    border-radius: 5px;
+    display: none;
+    flex-direction: column;
+    justify-content: space-between;
+    #idModalContent {
+        display: flex;
+        justify-content: space-evenly;
+    }
+    button {
+        color: white;
+        height: 10%;
+        border-color: white;
+    }
 }
 
 #idDivDab, #idDivStich {
+    position: relative;
     display: none;
     flex-direction: row;
     justify-content: center;
     align-items: center;
     height: 100%;
+    -webkit-transition: all 0.5s linear;  /* Chrome 1-25, Safari 3.2+ */
+    transition: all 0.5s linear;  /* Chrome 26, Firefox 16+, IE 10+, Opera 12.10+ */
+
+    &.left {
+
+    }
+    &.right {
+
+    }
+    &.top {
+        top: -50px;
+    }
+    &.bottom {
+        top: 50px;
+    }
 }
 
 #idDivMeldungen {
@@ -59,15 +103,109 @@
 
 .clGameplayActions {
     height: 10%;
+    #idButtonHandOut, #idButtonDabOpen {
+        width: 50%;
+        margin: auto;
+        height: 100%;
+    }
+    #idDivReiz {
+        display: flex;
+        justify-content: space-between;
+        margin-left: 0.5rem;
+        margin-right: 0.5rem;
+    }
+    #idDivReizInput {
+        display: flex;
+        justify-content: center;
+        width: 40%;
+        max-height: 100%;
+        border: 3px solid @gray;
+        border-radius: @borderradius;
+        input {
+            width: 70%;
+            text-align: center;
+            height: 100%;
+            border: none;
+        }
+        button {
+            border-left: 3px solid @gray;
+            width: 30%;
+            border:none;
+            border-radius: 0px;
+            border-left: 3px solid @gray;
+        }
+    }
+    .clDivMelden {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        height: 100%;
+        #idButtonMelden {
+            height: 60%;
+            &:disabled {
+                color: darkslategray;
+            }
+        }
+        #idDivTrumpf {
+            height: 60%;
+            width: 40%;
+            .trumpfbutton {
+                width: 25%;
+                &.active {
+                    border: 2px solid red;
+                }
+            }
+            #idButtonTrumpfSchippe {
+                background-image: url("/static/img/schippe.png");
+                background-size: contain;
+                background-repeat: no-repeat;
+            }
+            #idButtonTrumpfKreuz {
+                background-image: url("/static/img/kreuz.png");
+                background-size: contain;
+                background-repeat: no-repeat;
+            }
+            #idButtonTrumpfHerz {
+                background-image: url("/static/img/herz.png");
+                background-size: contain;
+                background-repeat: no-repeat;
+            }
+            #idButtonTrumpfBolle {
+                background-image: url("/static/img/bolle.png");
+                background-size: contain;
+                background-repeat: no-repeat;
+            }
+        }
+    }
 }
 
 .clGameplayCards {
     height: 30%;
     display: flex;
+    flex-direction: column;
     align-items: center;
 }
 
+.clCardRow {
+    width: 100%;
+    height: 33%;
+    position: relative;
+    .card {
+        height: 100%;
+        display: inline-flex;
+        align-items: center;
+        justify-content: flex-end;
+        flex-direction: column;
+        position: absolute;
+        transition: left 1s linear;
+    }
+}
+
 .card {
+    box-sizing: border-box;
+    border: 5px solid white;
+    background-color: wheat;
+    color: black;
     font-size: 1.25rem;
     font-weight: 600;
     width: 13%;
@@ -78,18 +216,20 @@
     background-size: 50%;
     background-position-x: center;
     background-position-y: 10%;
-
-    border: 3px solid black;
     margin: 2px;
     border-radius: 10%;
+
+    &.umgedeckt {
+    //   background: url("/static/img/cardback.jpg");
+        background: @primary;
+        background-size: cover;
+    }
+
 }
 
+
 .clInvalidCard {
-    /* Start the shake animation and make the animation last for 0.5 seconds */
     animation: shake 0.5s;
-    
-    /* When the animation is finished, start again */
-  //  animation-iteration-count: infinite;
 }
 
 .dabcard {
@@ -97,15 +237,17 @@
 }
 
 .cardmeldestatemelden {
-    -webkit-box-shadow:inset 0px 0px 0px 5px rgb(51, 255, 0);
-    -moz-box-shadow:inset 0px 0px 0px 5px rgb(51, 255, 0);
-    box-shadow:inset 0px 0px 0px 5px rgb(51, 255, 0);
+    background-color: rgb(51, 255, 0);
+    -webkit-box-shadow:inset 0px 0px 0px @borderradius rgb(51, 255, 0);
+    -moz-box-shadow:inset 0px 0px 0px @borderradius rgb(51, 255, 0);
+    box-shadow:inset 0px 0px 0px @borderradius rgb(51, 255, 0);
 }
 
 .cardmeldestatedrucke {
-    -webkit-box-shadow:inset 0px 0px 0px 5px #f00;
-    -moz-box-shadow:inset 0px 0px 0px 5px #f00;
-    box-shadow:inset 0px 0px 0px 5px #f00;
+    background-color: red;
+    -webkit-box-shadow:inset 0px 0px 0px @borderradius #f00;
+    -moz-box-shadow:inset 0px 0px 0px @borderradius #f00;
+    box-shadow:inset 0px 0px 0px @borderradius #f00;
 }
 
 #idDivTrumpf {
@@ -113,11 +255,6 @@
     flex-direction: row;
 }
 
-.trumpfbutton {
-    &.active {
-        border: 2px solid red;
-    }
-}
 
 .clMeldebubble {
     color: black;
@@ -183,3 +320,9 @@
         }    
     }
 }
+
+.pulseit{
+	-webkit-animation: flash linear 1s infinite;
+	animation: flash linear 1s infinite;
+}
+

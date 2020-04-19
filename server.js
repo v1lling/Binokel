@@ -50,7 +50,7 @@ io.on('connection', function(socket) {
                 return obj;
             }, {});
         io.sockets.emit('openrooms', aOpenRooms);
-    }, 1000);
+    }, 100);
 
     socket.on('disconnect', function() {
         // remove disconnected player
@@ -128,8 +128,14 @@ io.on('connection', function(socket) {
     }.bind(this));
 
     socket.on('startgame', function() {
-        // tell players it has started
         var oGame = aGame[socket.room];
+        // check if teams are applied although they shouldnt
+        if (oGame.aPlayers.length < 4) {
+            oGame.aPlayers.forEach(function(player) {
+                player.team = 1;
+            }.bind(this));
+        }
+        // tell players it has started
         if (oGame.aPlayers.length === 4) {
             var sortedPlayers = [];
             var firstTeam = oGame.aPlayers[0].team;
@@ -176,6 +182,8 @@ io.on('connection', function(socket) {
     socket.on('reizweg', function() {
         var oGame = aGame[socket.room];
         var iPlayerIndex = oGame.aReizer.findIndex(x => x.id === socket.id);
+        emitGameBroadcast('weggegangen', socket.id);
+
         var iPlayerWegTeam = oGame.aReizer[iPlayerIndex].team;
         oGame.aReizer.splice(iPlayerIndex, 1);
 
@@ -210,6 +218,14 @@ io.on('connection', function(socket) {
                     reizVal: oGame.iReizVal
                 }
                 oGame.aGameStats.push(oReizDone);
+                oGame.aPlayers.forEach(function(player) {
+                    if (player.id == oGame.aReizer[0].id) {
+                        player.gamestats.push({reiz : oGame.iReizVal});
+                    } else {
+                        player.gamestats.push({reiz : 0});
+                    }
+                }.bind(this));
+                sendGameStats();
                 emitGameBroadcast('reizdone', oReizDone);
             }
             
@@ -222,18 +238,19 @@ io.on('connection', function(socket) {
     
     socket.on('melde', function(data) {
         // save gemeldetes
-        emitGameBroadcast('gemeldet', data);
         var oGame = aGame[socket.room];
         if (socket.id === oGame.aGameStats[oGame.iGameIdx].reizID) {
             oGame.sTrumpf = data.trumpf;
             var iSpielhabenderIdx = oGame.aPlayers.findIndex(x => x.id === socket.id);
             oGame.aPlayers[iSpielhabenderIdx].stiche = oGame.aPlayers[iSpielhabenderIdx].stiche.concat(data.gedruckt);
-            
         }
-
-        var oMeldung = coundMeldung(data.gemeldet);
         var iPlayerIndex = aGame[socket.room].aPlayers.findIndex(x => x.id === socket.id);
-        oGame.aPlayers[iPlayerIndex].gamestats.push({meldung: oMeldung });
+        var oMeldung = coundMeldung(data.gemeldet);
+        oMeldung.name = oGame.aPlayers[iPlayerIndex].name;
+        oMeldung.trumpf = data.trumpf ? data.trumpf : "";
+        emitGameBroadcast('gemeldet', oMeldung);
+
+        oGame.aPlayers[iPlayerIndex].gamestats[oGame.iGameIdx].meldung = oMeldung;
         oGame.aPlayers[iPlayerIndex].gemeldet = true;
         // haben alle gemeldet?
         var iOpenMelder = oGame.aPlayers.findIndex(x => x.gemeldet === false);
@@ -258,6 +275,7 @@ io.on('connection', function(socket) {
                     name: player.name
                 });
             });
+            sendGameStats();
             emitGameBroadcast('meldedone', aMeldungen);
             emitGameBroadcast('darfstechen', {stecherID: oFirstStecherID, stiche: []});
         }
@@ -298,14 +316,13 @@ io.on('connection', function(socket) {
                     points = Math.round(points / 10) * 10;
                     oGame.aPlayers[index].gamestats[oGame.iGameIdx].stichval = points;
                     if (oGame.aGameStats[oGame.iGameIdx].reizID === player.id) {
-                        // TODO: dab druffrechne
-
                         // check if geschafft
                         var gemeldet = oGame.aPlayers[index].gamestats[oGame.iGameIdx].meldeval;
-                        if (points + gemeldet >= oGame.aGameStats[oGame.iGameIdx].reizVal) {
+                        var gereizt = oGame.aPlayers[index].gamestats[oGame.iGameIdx].reizval;
+                        if (points + gemeldet >= gereizt) {
                             oGame.aPlayers[index].points += points;
                         } else {
-                            oGame.aPlayers[index].points -= oGame.aGameStats[oGame.iGameIdx].reizVal + 100;
+                            oGame.aPlayers[index].points -= gereizt + 100;
                         }
                     } else {
                         oGame.aPlayers[index].points += points;
@@ -313,10 +330,12 @@ io.on('connection', function(socket) {
 
                 });
                 var oStich = {
-                    stiche: oGame.aStichCards
+                    stiche: oGame.aStichCards,
+                    newstich: true
                 }
-              //  emitGameBroadcast('darfstechen', oStich);
+                emitGameBroadcast('darfstechen', oStich);
                 // TODO: rundenende, sende stats / geschafft oder nit?
+                sendGameStats(true);
                 nextRound();
             }
             oGame.aStichCards = [];
@@ -619,6 +638,23 @@ io.on('connection', function(socket) {
             }
         });
         return winnerstich;
+    }
+
+    function sendGameStats(bRoundend) {
+        var oCurrentGameStats = {};
+        oCurrentGameStats.roundEnd = bRoundend;
+        oCurrentGameStats.stats = {};
+        var oGame = aGame[socket.room];
+        oGame.aPlayers.forEach(function(player) {
+            oCurrentGameStats.stats[player.name] = [];
+            player.gamestats.forEach(function(gamestat) {
+                oCurrentGameStats.stats[player.name].push(gamestat.reiz);
+                oCurrentGameStats.stats[player.name].push(gamestat.meldung ? gamestat.meldung.punkte : 0);
+                oCurrentGameStats.stats[player.name].push(gamestat.stichval);
+            }.bind(this));
+            
+        }.bind(this));
+        emitGameBroadcast('gamestats', oCurrentGameStats);
     }
 
     function shuffle(array) {

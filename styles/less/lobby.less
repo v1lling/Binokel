@@ -4,5 +4,60 @@
     display: flex;
     flex-direction: column;
     align-items: center;
-    justify-content: center;
+    justify-content: space-between;
+}
+
+#idLabelRoomname {
+    margin-top: 2rem;
+    margin-bottom: 2rem;
+}
+
+.clDivChooseTeam {
+    display: flex;
+    button {
+        width: 50%;
+        height: 2rem;
+        transition: background-color 0.2s linear;
+    }
+    .clButtonTeamOne {
+        margin-right: 0.5rem;
+        border-color: @teamone;
+        &.selected {
+            background: @teamone;
+        }
+    }
+    .clButtonTeamTwo {
+        margin-left: 0.5rem;
+        border-color: @teamtwo;
+        background: transparent;
+        &.selected {
+            background: @teamtwo;
+        }
+    }
+}
+
+#idButtonReady {
+    width: 100%;
+    margin-bottom: 2rem;
+    margin-top: 2rem;
+    border-color: @readygreen;
+    color: @readygreen;
+    transition: background-color 0.2s linear;
+    &:disabled {
+        background-color: @primary;
+        color: white;
+    }
+}
+
+.player {
+    transition: color 0.5s linear;
+    &.team-1 {
+        color: @teamone;
+    }
+    &.team-2 {
+        color: @teamtwo;
+    }
+    &.notready {
+        animation: flash linear 1s infinite;
+    }
 }

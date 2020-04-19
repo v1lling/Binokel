@@ -1,5 +1,11 @@
-<div id="idDivGameplay" style='display: none'>
-    <div class="clGameplayPlayer section">
+<div class="clPage" id="idDivGameplay" style='display: none'>
+  <div id="idModal" class="clModal">
+    <div id="idModalContent">
+
+    </div>
+    <button onclick=onHideModal()>CLOSE</button>
+  </div>
+  <div class="clGameplayPlayer section">
       <div class="clPlayerRow">
         <div class="clPlayerName">
           <label id="idPlayerTop"></label>
@@ -27,7 +33,6 @@
 
     <div class="clGameplayMid section">
       <div id="idDivMeldungen">
-        <button onclick="onCloseMeldungen()">CLOSE</button>
       </div>
       <div id="idDivDab"></div>
       <div id="idDivStich"></div>
@@ -35,30 +40,29 @@
 
     <div class="clGameplayActions section">
       <button id="idButtonHandOut" onclick="onHandOut()" style='display:none'>AUSGEBE</button>
-      <button id="idButtonDabOpen" style='display:none'>DAB UFDECKE</button>      
+      <label id="idButtonDabOpen" style='display:none'>DAB UFDECKE</label>      
       <div id="idDivReiz" style='display:none'>
+        <button id="idButtonWeg" onclick="onWeg()">WEG</button>
         <div id="idDivReizInput" class="number">
           <input readonly id="idInputReiz" type="text"/>
           <button onclick="onClickPlus()" class="plus">+</button>
         </div>
         <button onclick="onReiz()">REIZ</button>
-        <button id="idButtonWeg" onclick="onWeg()">WEG</button>
       </div>
-      <div >
+      <div id="idDivMelden" class="clDivMelden">
         <button id="idButtonMelden" onclick="onMelden()" style='display:none'>MELDE</button>
         <div id="idDivTrumpf">
-          <button id="idButtonTrumpfSchippe" class="trumpfbutton" value="schippe" onclick="onChooseTrumpf(this)">Schippe</button>
-          <button id="idButtonTrumpfKreuz" class="trumpfbutton" value="kreuz" onclick="onChooseTrumpf(this)">Kreuz</button>
-          <button id="idButtonTrumpfHerz" class="trumpfbutton" value="herz" onclick="onChooseTrumpf(this)">Herz</button>
-          <button id="idButtonTrumpfBolle" class="trumpfbutton" value="bolle" onclick="onChooseTrumpf(this)">Bolle</button>
+          <button id="idButtonTrumpfSchippe" class="trumpfbutton" value="schippe" onclick="onChooseTrumpf(this)"></button>
+          <button id="idButtonTrumpfKreuz" class="trumpfbutton" value="kreuz" onclick="onChooseTrumpf(this)"></button>
+          <button id="idButtonTrumpfHerz" class="trumpfbutton" value="herz" onclick="onChooseTrumpf(this)"></button>
+          <button id="idButtonTrumpfBolle" class="trumpfbutton" value="bolle" onclick="onChooseTrumpf(this)"></button>
 
         </div>
       </div>
     </div>
 
     <div class="clGameplayCards section">
-      <div id="idDivCards">
-      </div>
+        <div id="idDivCardsOne" class="clCardRow"></div>
     </div>
     
   </div>

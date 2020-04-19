@@ -56,20 +56,82 @@
     transform: translate(1px, -2px) rotate(-1deg);
   }
 }
+@-webkit-keyframes flash {
+  0% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.1;
+  }
+  100% {
+    opacity: 1;
+  }
+}
+@keyframes flash {
+  0% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.1;
+  }
+  100% {
+    opacity: 1;
+  }
+}
 #idDivGameplay {
   border: 1px solid black;
+  padding-left: 1rem;
+  padding-right: 1rem;
+  width: calc(100% - 2rem);
   height: 100%;
-  width: 100%;
   display: flex;
   flex-direction: column;
+  position: relative;
+}
+.clModal {
+  z-index: 1;
+  width: 80%;
+  height: 80%;
+  position: absolute;
+  margin: auto;
+  border: 3px solid white;
+  background: rgba(0, 0, 0, 0.8);
+  left: 10%;
+  top: 10%;
+  border-radius: 5px;
+  display: none;
+  flex-direction: column;
+  justify-content: space-between;
+}
+.clModal #idModalContent {
+  display: flex;
+  justify-content: space-evenly;
+}
+.clModal button {
+  color: white;
+  height: 10%;
+  border-color: white;
 }
 #idDivDab,
 #idDivStich {
+  position: relative;
   display: none;
   flex-direction: row;
   justify-content: center;
   align-items: center;
   height: 100%;
+  -webkit-transition: all 0.5s linear;
+  /* Chrome 1-25, Safari 3.2+ */
+  transition: all 0.5s linear;
+  /* Chrome 26, Firefox 16+, IE 10+, Opera 12.10+ */
+}
+#idDivDab.top,
+#idDivStich.top {
+  top: -50px;
+}
+#idDivDab.bottom,
+#idDivStich.bottom {
+  top: 50px;
 }
 #idDivMeldungen {
   display: none;
@@ -108,12 +170,105 @@
 .clGameplayActions {
   height: 10%;
 }
+.clGameplayActions #idButtonHandOut,
+.clGameplayActions #idButtonDabOpen {
+  width: 50%;
+  margin: auto;
+  height: 100%;
+}
+.clGameplayActions #idDivReiz {
+  display: flex;
+  justify-content: space-between;
+  margin-left: 0.5rem;
+  margin-right: 0.5rem;
+}
+.clGameplayActions #idDivReizInput {
+  display: flex;
+  justify-content: center;
+  width: 40%;
+  max-height: 100%;
+  border: 3px solid #9b9b9b;
+  border-radius: 5px;
+}
+.clGameplayActions #idDivReizInput input {
+  width: 70%;
+  text-align: center;
+  height: 100%;
+  border: none;
+}
+.clGameplayActions #idDivReizInput button {
+  width: 30%;
+  border: none;
+  border-radius: 0px;
+  border-left: 3px solid #9b9b9b;
+}
+.clGameplayActions .clDivMelden {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 100%;
+}
+.clGameplayActions .clDivMelden #idButtonMelden {
+  height: 60%;
+}
+.clGameplayActions .clDivMelden #idButtonMelden:disabled {
+  color: darkslategray;
+}
+.clGameplayActions .clDivMelden #idDivTrumpf {
+  height: 60%;
+  width: 40%;
+}
+.clGameplayActions .clDivMelden #idDivTrumpf .trumpfbutton {
+  width: 25%;
+}
+.clGameplayActions .clDivMelden #idDivTrumpf .trumpfbutton.active {
+  border: 2px solid red;
+}
+.clGameplayActions .clDivMelden #idDivTrumpf #idButtonTrumpfSchippe {
+  background-image: url("/static/img/schippe.png");
+  background-size: contain;
+  background-repeat: no-repeat;
+}
+.clGameplayActions .clDivMelden #idDivTrumpf #idButtonTrumpfKreuz {
+  background-image: url("/static/img/kreuz.png");
+  background-size: contain;
+  background-repeat: no-repeat;
+}
+.clGameplayActions .clDivMelden #idDivTrumpf #idButtonTrumpfHerz {
+  background-image: url("/static/img/herz.png");
+  background-size: contain;
+  background-repeat: no-repeat;
+}
+.clGameplayActions .clDivMelden #idDivTrumpf #idButtonTrumpfBolle {
+  background-image: url("/static/img/bolle.png");
+  background-size: contain;
+  background-repeat: no-repeat;
+}
 .clGameplayCards {
   height: 30%;
   display: flex;
+  flex-direction: column;
   align-items: center;
 }
+.clCardRow {
+  width: 100%;
+  height: 33%;
+  position: relative;
+}
+.clCardRow .card {
+  height: 100%;
+  display: inline-flex;
+  align-items: center;
+  justify-content: flex-end;
+  flex-direction: column;
+  position: absolute;
+  transition: left 1s linear;
+}
 .card {
+  box-sizing: border-box;
+  border: 5px solid white;
+  background-color: wheat;
+  color: black;
   font-size: 1.25rem;
   font-weight: 600;
   width: 13%;
@@ -123,21 +278,24 @@
   background-size: 50%;
   background-position-x: center;
   background-position-y: 10%;
-  border: 3px solid black;
   margin: 2px;
   border-radius: 10%;
 }
+.card.umgedeckt {
+  background: #037d50;
+  background-size: cover;
+}
 .clInvalidCard {
-  /* Start the shake animation and make the animation last for 0.5 seconds */
   animation: shake 0.5s;
-  /* When the animation is finished, start again */
 }
 .cardmeldestatemelden {
+  background-color: #33ff00;
   -webkit-box-shadow: inset 0px 0px 0px 5px #33ff00;
   -moz-box-shadow: inset 0px 0px 0px 5px #33ff00;
   box-shadow: inset 0px 0px 0px 5px #33ff00;
 }
 .cardmeldestatedrucke {
+  background-color: red;
   -webkit-box-shadow: inset 0px 0px 0px 5px #f00;
   -moz-box-shadow: inset 0px 0px 0px 5px #f00;
   box-shadow: inset 0px 0px 0px 5px #f00;
@@ -145,9 +303,6 @@
 #idDivTrumpf {
   display: none;
   flex-direction: row;
-}
-.trumpfbutton.active {
-  border: 2px solid red;
 }
 .clMeldebubble {
   color: black;
@@ -209,24 +364,150 @@
   border: 20px solid;
   border-color: transparent transparent transparent white;
 }
+.pulseit {
+  -webkit-animation: flash linear 1s infinite;
+  animation: flash linear 1s infinite;
+}
 #idDivLobby {
   height: 100%;
   width: 100%;
   display: flex;
   flex-direction: column;
   align-items: center;
-  justify-content: center;
+  justify-content: space-between;
+}
+#idLabelRoomname {
+  margin-top: 2rem;
+  margin-bottom: 2rem;
+}
+.clDivChooseTeam {
+  display: flex;
+}
+.clDivChooseTeam button {
+  width: 50%;
+  height: 2rem;
+  transition: background-color 0.2s linear;
+}
+.clDivChooseTeam .clButtonTeamOne {
+  margin-right: 0.5rem;
+  border-color: blue;
+}
+.clDivChooseTeam .clButtonTeamOne.selected {
+  background: blue;
+}
+.clDivChooseTeam .clButtonTeamTwo {
+  margin-left: 0.5rem;
+  border-color: red;
+  background: transparent;
+}
+.clDivChooseTeam .clButtonTeamTwo.selected {
+  background: red;
+}
+#idButtonReady {
+  width: 100%;
+  margin-bottom: 2rem;
+  margin-top: 2rem;
+  border-color: #38ef7d;
+  color: #38ef7d;
+  transition: background-color 0.2s linear;
+}
+#idButtonReady:disabled {
+  background-color: #037d50;
+  color: white;
+}
+.player {
+  transition: color 0.5s linear;
+}
+.player.team-1 {
+  color: blue;
+}
+.player.team-2 {
+  color: red;
+}
+.player.notready {
+  animation: flash linear 1s infinite;
 }
 #idDivPlayers {
   background-color: blue;
 }
 #idDivName {
-  height: 100%;
   width: 100%;
   display: flex;
   flex-direction: column;
   align-items: center;
-  justify-content: center;
+}
+.clLabelTitle {
+  padding-top: 7rem;
+  font-size: 7rem;
+  font-family: 'EasyRider';
+}
+.form__group {
+  margin-top: 2rem;
+  position: relative;
+  padding: 15px 0 0;
+  margin-top: 10px;
+  width: 50%;
+}
+.form__field {
+  font-family: inherit;
+  width: 100%;
+  border: 0;
+  border-bottom: 2px solid #9b9b9b;
+  outline: 0;
+  font-size: inherit;
+  color: #fff;
+  padding-top: 1.2rem;
+  padding-bottom: 5px;
+  background: transparent;
+  transition: border-color 0.2s;
+}
+.form__field::placeholder {
+  color: transparent;
+}
+.form__field:placeholder-shown ~ .form__label {
+  font-size: inherit;
+  cursor: text;
+  top: 20px;
+}
+.form_button {
+  font-family: inherit;
+  width: 100%;
+  margin-top: 2rem;
+  height: 50px;
+}
+.form__label {
+  position: absolute;
+  top: 0;
+  padding-top: 1rem;
+  display: block;
+  transition: 0.2s;
+  font-size: 1rem;
+  color: #9b9b9b;
+}
+.form__field:focus {
+  padding-bottom: 6px;
+  font-weight: 700;
+  border-width: 3px;
+  border-color: #037d50;
+  border-image-slice: 1;
+}
+.form__field:focus ~ .form__label {
+  position: absolute;
+  top: 0;
+  display: block;
+  transition: 0.2s;
+  font-size: 1rem;
+  color: #037d50;
+  font-weight: 700;
+}
+.form__field:focus ~ .form_button {
+  border-color: #037d50;
+  color: #037d50;
+}
+/* reset input */
+.form__field:required,
+.form__field:invalid {
+  box-shadow: none;
 }
 #idDivRooms {
   height: 100%;
@@ -234,20 +515,108 @@
   display: flex;
   flex-direction: column;
   align-items: center;
-  justify-content: center;
+  justify-content: space-between;
 }
-button {
-  background: white;
-  border: 2px solid black;
-  border-radius: 3px;
+.clLabelLobbies {
+  margin-top: 2rem;
+  margin-bottom: 2rem;
+}
+.clDivRooms {
+  overflow: auto;
+  width: calc(100% - 4rem);
+  width: inherit;
+  width: 70%;
+  margin-left: 2rem;
+  margin-right: 2rem;
+}
+.clButtonCreate {
+  margin-bottom: 2rem;
+  margin-top: 2rem;
+  width: 100%;
+}
+.clOpenRoomItem {
+  border: 3px solid #9b9b9b;
+  border-radius: 10px;
+  margin-bottom: 1rem;
+  height: 3rem;
+  padding-left: 1rem;
+  padding-right: 1rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+.clOpenRoomItem:hover {
+  cursor: pointer;
+}
+@font-face {
+  font-family: 'Roboto';
+  src: url('/static/fonts/Roboto-Regular.ttf') format('truetype');
+}
+@font-face {
+  font-family: 'Roboto-bold';
+  src: url('/static/fonts/Roboto-Bold.ttf') format('truetype');
+}
+@font-face {
+  font-family: 'Orange';
+  src: url('/static/fonts/Orange.ttf') format('truetype');
+}
+@font-face {
+  font-family: 'EasyRider';
+  src: url('/static/fonts/EasyRider.ttf') format('truetype');
 }
 body {
+  background-color: whitesmoke;
+  font-family: "Roboto";
   font-size: 2rem;
   color: white;
   text-align: center;
-  max-width: 450px;
-  max-height: 900px;
   margin: auto;
-  background-image: url("/static/img/background.jpg");
+  max-width: 600px;
+  min-height: 100%;
   overscroll-behavior: contain;
+}
+body :focus {
+  outline: none !important;
+}
+button {
+  background: transparent;
+  border-radius: 5px;
+  font-family: inherit;
+  border: 3px solid #9b9b9b;
+  color: #9b9b9b;
+  font-size: 2rem;
+}
+button:hover {
+  cursor: pointer;
+}
+input {
+  font-size: 2rem;
+  background: transparent;
+  border-radius: 5px;
+  font-family: inherit;
+  color: #9b9b9b;
+  border: none;
+}
+.clDivBottom {
+  min-height: 20%;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  width: 70%;
+}
+.clDivBottom button {
+  font-family: "Roboto-bold";
+}
+.clDivTop {
+  background-color: #9b9b9b;
+  height: 10%;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  width: 100%;
+  border-radius: 5px ;
+}
+.clPage {
+  background: #222222;
+  height: 100%;
 }

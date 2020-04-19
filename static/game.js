@@ -14,6 +14,7 @@ var myGame = false;
 var theStichWinner = {};
 var gameStarted = false;
 var thePlayers = [];
+var theGameStats = {};
 
 // SOCKET HANDLERS
 socket.on('message', function(data) {
@@ -39,7 +40,7 @@ socket.on('cards', function(data) {
         var oCardButton = document.createElement("button");
         oCardButton.id = "idDabCard" + i;
         oCardButton.idx = i;
-        oCardButton.className = "card dabcard";
+        oCardButton.className = "card dabcard umgedeckt";
         oCardButton.onclick = onClickCard.bind(oCardButton);
         oDivDab.appendChild(oCardButton); 
     }
@@ -49,6 +50,7 @@ socket.on('cards', function(data) {
 
 socket.on('dabopened', function(data) {
     var oCardButton = document.getElementById("idDabCard" + data.idx);
+    oCardButton.classList.remove("umgedeckt");
     oCardButton.open = true;
     oCardButton.style.backgroundImage = "url(/static/img/" + data.card.suit + ".png)";
     oCardButton.textContent = data.card.value;
@@ -60,44 +62,49 @@ socket.on('dabopened', function(data) {
 socket.on('openrooms', function(data) {
     //document.getElementById("idLabelRooms").innerHTML = JSON.stringify(Object.keys(data));
     var oDivRooms = document.getElementById("idDivOpenRooms");
-
-    var schondrin = Object.keys(data).filter(x => Object.keys(openRooms).includes(x));
-    var neu = Object.keys(data).filter(x => !Object.keys(openRooms).includes(x));
-    var weg = Object.keys(openRooms).filter(x => !Object.keys(data).includes(x));
-
-    schondrin.forEach(function(room) {
-        // nur players updaten
-        var player = document.getElementById("idPlayers" + room);
-        player.innerHTML = data[room].aPlayers.length;
-    }.bind(this));
-
-    neu.forEach(function(room) {
-        // erstllen mit name und 
-        var item = document.createElement("div");
-        item.setAttribute("id", "idDiv" + room);
-        var roomname = document.createElement("span");
-        roomname.innerHTML = room;
-        var players = document.createElement("span");
-        players.innerHTML = data[room].aPlayers.length;
-        players.setAttribute("id", "idPlayers" + room);
-        var join = document.createElement("button");
-        join.textContent = "JOIN";
-        join.value = room;
-        join.onclick = onJoinRoom.bind(join);
-        item.appendChild(roomname);
-        item.appendChild(players);
-        item.appendChild(join);
-        oDivRooms.appendChild(item);
-        console.log();
-    }.bind(this));
-
-    weg.forEach(function(room) {
-        // room löschen
-    }.bind(this));
-    openRooms = data;
+    
+    if (oDivRooms) {
+        var schondrin = Object.keys(data).filter(x => Object.keys(openRooms).includes(x));
+        var neu = Object.keys(data).filter(x => !Object.keys(openRooms).includes(x));
+        var weg = Object.keys(openRooms).filter(x => !Object.keys(data).includes(x));
+    
+        schondrin.forEach(function(room) {
+            // nur players updaten
+            var player = document.getElementById("idPlayers" + room);
+            player.innerHTML = data[room].aPlayers.length;
+        }.bind(this));
+    
+        neu.forEach(function(room) {
+            // erstllen mit name und 
+            var item = document.createElement("div");
+            item.setAttribute("id", "idDiv" + room);
+            item.setAttribute("class", "clOpenRoomItem")
+            var roomname = document.createElement("span");
+            roomname.innerHTML = room;
+            var players = document.createElement("span");
+            players.innerHTML = data[room].aPlayers.length;
+            players.setAttribute("id", "idPlayers" + room);
+            item.roomname = room;
+            item.onclick = onJoinRoom.bind(item);
+            item.appendChild(roomname);
+            item.appendChild(players);
+            oDivRooms.appendChild(item);
+            console.log();
+        }.bind(this));
+    
+        weg.forEach(function(room) {
+            // room löschen
+        }.bind(this));
+        openRooms = data;
+    }
 })
 
 socket.on('roomplayers', function(data) {
+    if (data.length < 4) {
+        hideElement("idDivChooseTeam");
+    } else {
+        showElement("idDivChooseTeam");
+    }
     if (!gameStarted) {
         var oDivPlayers = document.getElementById("idDivPlayerLobby");
         oDivPlayers.innerHTML = "";
@@ -108,18 +115,23 @@ socket.on('roomplayers', function(data) {
 })
 
 socket.on('resetready', function() {
-    hideElement("idButtonStartGame");
-    showElement("idButtonReady", "block");
+    enableReady(true);
 })
 
 socket.on('canstartgame', function() {
-    showElement("idButtonStartGame");
+    setTimeout(function() {
+        var readybutton = document.getElementById("idButtonReady");
+        readybutton.innerHTML = "START";
+        readybutton.disabled = false;
+    }.bind(this), 1000);
+ 
 })
 
 socket.on('gamestarted', function(data) {
     gameStarted = true;
     thePlayers = data;
-    updatePlayer(data);
+    theGameStats = {};
+    updatePlayer();
 
     hideElement("idDivLobby");
     // show gameplay
@@ -134,6 +146,7 @@ socket.on('cancel', function() {
 })
 
 socket.on('reizturn', function(data) {
+    showCurrentZug(data.reizIDnext);
     if (data.reizIDlast) {
         showReizValue(data);
         document.getElementById("idInputReiz").value = parseInt(data.reizVal) + 10;
@@ -145,6 +158,10 @@ socket.on('reizturn', function(data) {
         // du reizst
         showElement("idDivReiz");
     } 
+})
+
+socket.on('weggegangen', function(data) {
+    updatePlayer(data);
 })
 
 socket.on('reizdone', function(data) {
@@ -167,17 +184,21 @@ socket.on('gemeldet', function(data) {
     if (data.trumpf) {
         theTrumpf = data.trumpf;
     }
-    console.log("Player gemeldet: " + data);
+    hideElement("idDivDab");
+    showMeldung(data);
 })
 
 socket.on('meldedone', function(data) {
-    hideElement("idDivDab");
-    showElement("idDivMeldungen");
     console.log(data);
-    showElement("idDivStich");
+    // TODO show every meldung immern ur ein interval? Problem: Wie kann man die in reihe hintereinander anzeigen?
+    setTimeout(function() {
+        hideElement("idDivMeldungen");
+        showElement("idDivStich");
+    }.bind(this), 1000);
 })
 
 socket.on('darfstechen', function(data) {
+    showCurrentZug(data.stecherID);
     // show new card
     var oDivStich = document.getElementById('idDivStich');
     if (data.stiche.length) {
@@ -195,6 +216,10 @@ socket.on('darfstechen', function(data) {
     }
     if (data.newstich) {
         theStichWinner = {};
+        setTimeout(function() {
+            showStichWin(data);
+        }.bind(this), 500);
+        
     } else {
         theStichWinner = data.stichwinner;
     }
@@ -206,14 +231,25 @@ socket.on('darfstechen', function(data) {
     }
 })
 
+socket.on('gamestats', function(data) {
+    theGameStats = data.stats;
+    console.log(data);
+   // if (data.roundEnd) {
+        showGameStats();
+   // }
+
+})
+
 // BUTTON HANDLERS
 function onEnterName() {
     myName = document.getElementById("idInputName").value;
-    removeElement("idDivName");
-    showElement("idDivRooms");
+    if (myName) {
+        removeElement("idDivName");
+        showElement("idDivRooms");
+    }
 }
 function onCreateRoom() {
-    var sRoomname = document.getElementById("idInputCreateGameRoom").value;
+    var sRoomname = myName + "'s Raum";
     if (sRoomname) {
         socket.emit('createroom', {room: sRoomname, name: myName});
         myRoom = sRoomname;
@@ -224,7 +260,7 @@ function onCreateRoom() {
 }
 
 function onJoinRoom(e) {
-    var sRoomname = e.srcElement.value;
+    var sRoomname = e.srcElement.roomname ? e.srcElement.roomname : e.srcElement.parentElement.roomname;
     socket.emit('joinroom', {room: sRoomname, name: myName})
     removeElement("idDivRooms")
     myRoom = sRoomname;
@@ -232,18 +268,21 @@ function onJoinRoom(e) {
     showElement("idDivLobby");
 }
 
-function chooseTeam(radio) {
-    socket.emit('chooseteam', radio.id);
+function chooseTeam(button) {
+    button.parentElement.childNodes.forEach(function (child) {
+        child.classList.remove("selected");
+    }.bind(this));
+    $(button).addClass("selected");
+    socket.emit('chooseteam', button.id);
 }
 
-function onClickReady() {
-    hideElement("idButtonReady");
-    socket.emit('ready');
-}
-
-function onStartGame() {
-    socket.emit('startgame');
-    // close lobby view
+function onClickReady(button) {
+    if (button.textContent == "READY") {
+        socket.emit('ready');
+        enableReady(false);
+    } else {
+        socket.emit('startgame');
+    }
 }
 
 function onHandOut() {
@@ -279,14 +318,23 @@ function onMelden() {
             suit: this.suit
         });
     });
+    $(".cardmeldestatemelden").removeClass("cardmeldestatemelden");
+
     var aGedruckt = [];
     $(".cardmeldestatedrucke").each(function() {
         aGedruckt.push({
-            value: this.value,
-            suit: this.suit
+            card : {
+                value: this.value,
+                suit: this.suit,
+                eyes: this.eyes
+            }
         });
+        var cardIdx = myCards.findIndex(x => x.suit == this.suit && x.eyes == this.eyes);
+        myCards.splice(cardIdx, 1);
+
         this.parentNode.removeChild(this);
     });
+    updateCardPosition();
     
     var oMeldung = {
         gemeldet: aGemeldet,
@@ -313,14 +361,10 @@ function onChooseTrumpf(srcElement) {
     }
 }
 
-function onCloseMeldungen() {
-    hideElement("idDivMeldungen");
-}
-
 function onClickCard(e) {
     // TODO: when is my turn, when wird gestochen/sortiert
-    if (myStechTurn) {
-            var oDivCards = document.getElementById("idDivCards");
+    if (myStechTurn && e.srcElement.suit) {
+            var oDivCards = document.getElementById("idDivCardsOne");
             var oStichCards = document.getElementById("idDivStich");
             var isValid = false;
             //leg karte
@@ -329,7 +373,9 @@ function onClickCard(e) {
                 socket.emit('steche', {suit: e.srcElement.suit, value: e.srcElement.value, eyes: e.srcElement.eyes});
                 var cardIdx = myCards.findIndex(x => x.suit == e.srcElement.suit && x.eyes == e.srcElement.eyes);
                 myCards.splice(cardIdx, 1);
+                
                 oDivCards.removeChild(e.srcElement);
+                updateCardPosition();
                 myStechTurn = false;
             } else {
                 var firstCard = oStichCards.childNodes[0];
@@ -400,8 +446,9 @@ function onClickCard(e) {
                 if (isValid) {
                     socket.emit('steche', {suit: e.srcElement.suit, value: e.srcElement.value, eyes: e.srcElement.eyes});
                     var cardIdx = myCards.findIndex(x => x.suit == e.srcElement.suit && x.eyes == e.srcElement.eyes);
-                    myCard.splice(cardIdx, 1);
+                    myCards.splice(cardIdx, 1);
                     oDivCards.removeChild(e.srcElement);  
+                    updateCardPosition();
                     myStechTurn = false;
                 } else {
                     e.srcElement.classList.add("clInvalidCard");
@@ -434,7 +481,7 @@ function onClickCard(e) {
                 
             }
         }
-    } else if (myMeldeTurn) {
+    } else if (myMeldeTurn && e.srcElement.suit) {
         changeCardMeldeState(e.srcElement);
         if ($(".cardmeldestatedrucke").length === aDab.length && myTrumpf) {
             // genug gedruckt
@@ -447,22 +494,58 @@ function onClickCard(e) {
     }
 }
 
+function onHideModal() {
+    hideElement("idModal");
+}
+
 /*
 *
 * DOM UTILS
 *
 */
-function updatePlayer(players) {
+function updatePlayer(playerweg) {
     var aPlayerLocConfig = [
         ["idPlayerBottom", "idPlayerTop"],
         ["idPlayerBottom", "idPlayerMidTwo", "idPlayerTop"],
         ["idPlayerBottom", "idPlayerMidTwo", "idPlayerTop", "idPlayerMidOne"]
     ];
-    var playerIdx = players.findIndex(x => x.id === socket.id);
-    for (var i = 0; i < players.length; i++) {
+    var playerIdx = thePlayers.findIndex(x => x.id === socket.id);
+    for (var i = 0; i < thePlayers.length; i++) {
         // TODO update the labels
-        document.getElementById(aPlayerLocConfig[players.length - 2][i]).innerHTML = players[playerIdx].name;
-        playerIdx = playerIdx == players.length - 1 ? 0 : playerIdx + 1;
+        if (playerweg) {
+            if (playerweg == thePlayers[playerIdx].id) {
+                document.getElementById(aPlayerLocConfig[thePlayers.length - 2][i]).innerHTML += "weg";
+            }
+        } else {
+            document.getElementById(aPlayerLocConfig[thePlayers.length - 2][i]).innerHTML = thePlayers[playerIdx].name;
+        }
+        playerIdx = playerIdx == thePlayers.length - 1 ? 0 : playerIdx + 1;
+    }
+}
+
+function enableReady(bEnabled) {
+    var readybutton = document.getElementById("idButtonReady");
+    readybutton.innerHTML = "READY";
+    if (bEnabled) {
+        readybutton.disabled = false;
+    } else {
+        readybutton.disabled = true;
+    }
+}
+
+function showCurrentZug(id) {
+    var aPlayerLocConfig = [
+        ["idPlayerBottom", "idPlayerTop"],
+        ["idPlayerBottom", "idPlayerMidTwo", "idPlayerTop"],
+        ["idPlayerBottom", "idPlayerMidTwo", "idPlayerTop", "idPlayerMidOne"]
+    ];
+    var playerIdx = thePlayers.findIndex(x => x.id === socket.id);
+    for (var i = 0; i < thePlayers.length; i++) {
+        $("#" + aPlayerLocConfig[thePlayers.length - 2][i]).removeClass("pulseit");
+        if (id == thePlayers[playerIdx].id) {
+            $("#" + aPlayerLocConfig[thePlayers.length - 2][i]).addClass("pulseit");
+        }
+        playerIdx = playerIdx == thePlayers.length - 1 ? 0 : playerIdx + 1;
     }
 }
 
@@ -489,20 +572,53 @@ function changeCardMeldeState(card) {
 function addToMyCards(cards) {
     myCards = myCards.concat(cards);
     myCards = myCards.sort(compareCards);
-    var oDivCards = document.getElementById("idDivCards");
+    /*
+    var oDivCardsOne = document.getElementById("idDivCardsOne");
+    var oDivCardsTwo = document.getElementById("idDivCardsTwo");
+    var oDivCardsThree = document.getElementById("idDivCardsThree");
+    var oDivCards = myCards.length > 14 ? 
+        [oDivCardsOne, oDivCardsTwo, oDivCardsThree] :
+        [oDivCardsTwo, oDivCardsThree];
+*/
+    var oDivCards = document.getElementById("idDivCardsOne");
     oDivCards.innerHTML = "";
+   // oDivCards.forEach(x => x.innerHTML = "");
     for(var i in myCards) {
         var oCardButton = document.createElement("button");
-       // oCardButton.textContent = myCards[i].suit + " " + myCards[i].value;
-        oCardButton.textContent = myCards[i].value;
+        var oValue = document.createElement("span");
+        oValue.textContent = myCards[i].value;
+      //  oCardButton.textContent = 
         oCardButton.value = myCards[i].value;
         oCardButton.suit = myCards[i].suit;
         oCardButton.eyes = myCards[i].eyes;
         oCardButton.style.backgroundImage = "url(/static/img/" + myCards[i].suit + ".png)";
         oCardButton.className = "card playercard";
         oCardButton.onclick = onClickCard.bind(oCardButton);
+        oCardButton.appendChild(oValue);
+      //  var row = Math.trunc(i / 7);
+        var left = i % 7 * 14;
+        var top = Math.trunc(i / 7) * 101;
+        oCardButton.style.left = -100;
+        oCardButton.style.top = top + "%";
         oDivCards.appendChild(oCardButton);
-    } 
+        setTimeout(slideIn.bind(this, oCardButton, left), 500);
+    }
+
+    function slideIn(elm, left) {
+        elm.style.left = left + "%";
+    }
+
+   
+}
+function updateCardPosition() {
+    var oDivCards = document.getElementById("idDivCardsOne");
+    for (var i = 0; i < oDivCards.childNodes.length; i++) {
+        var oCard = oDivCards.childNodes[i];
+        var left = i % 7 * 14;
+        var top = Math.trunc(i / 7) * 101;
+        oCard.style.left = left + "%";
+        oCard.style.top = top + "%";
+    }
 }
 
 function showReizValue(data) {
@@ -528,6 +644,41 @@ function showReizValue(data) {
         document.getElementById("idMeldeBubble").innerText = data.reizVal;
         showElement("idMeldeBubble");
     }.bind(this), 100);
+}
+
+function showStichWin(data) {
+    var aPlayerLocConfig = [
+        ["bottom", "top"],
+        ["bottom", "right", "top"],
+        ["bottom", "right", "top", "left"]
+    ];
+    var playerIdx = thePlayers.findIndex(x => x.id === socket.id);
+    var i = 0;
+    for (i; i < thePlayers.length; i++) {
+        // TODO update the labels+
+        if (thePlayers[playerIdx].id == data.stichwinner.playerid) {
+            break;
+        }
+        playerIdx = playerIdx == thePlayers.length - 1 ? 0 : playerIdx + 1;
+    }
+
+    var className = aPlayerLocConfig[thePlayers.length - 2][i];
+    $("#idDivStich").addClass(className);
+    setTimeout(function() {
+        $('#idDivStich').removeClass(className);
+       // $('#idDivStich').html("");
+    }.bind(this), 1500);
+}
+
+function showMeldung(data) {
+    showElement("idDivMeldungen");
+    var oDiv = document.getElementById("idDivMeldungen");
+    oDiv.innerHTML = data.name + ": ";
+    data.meldungen.forEach(function(meldung) {
+        oDiv.innerHTML += "</br>";
+        oDiv.innerHTML += meldung.combi;
+    }.bind(this));
+    oDiv.innerHTML += data.punkte;
 }
 
 function compareCards(card1, card2){
@@ -562,7 +713,7 @@ function hideElement(id) {
 
 function buildLobbyPlayer(parent, player, showteam ) {
     var playerdiv = document.createElement("div");
-    playerdiv.setAttribute("className", "player");
+    playerdiv.className = "player";
     var name = document.createElement("span");
     name.innerHTML = player.name;
     playerdiv.appendChild(name);
@@ -572,12 +723,28 @@ function buildLobbyPlayer(parent, player, showteam ) {
     playerdiv.appendChild(points);
     */
     if (showteam) {
-        var team = document.createElement("span");
-        team.innerHTML = player.team;
-        playerdiv.appendChild(team);
+        playerdiv.className += " team-" + player.team;
     }
-    var ready = document.createElement("span");
-    ready.innerHTML = player.ready ? "READY" : "";
-    playerdiv.appendChild(ready);
+    if (!player.ready) {
+        playerdiv.className += " notready";
+    }
     parent.appendChild(playerdiv);
+}
+
+function showGameStats() {
+    var oModal = document.getElementById("idModalContent");
+    oModal.innerHTML = "";
+    for (var stat in theGameStats) {
+        var oColumn = document.createElement("div");
+        oColumn.innerHTML += stat + "</br>";
+        theGameStats[stat].forEach(function(playerstat) {
+            if (playerstat) {
+                oColumn.innerHTML += playerstat + "</br>";
+            } else {
+                oColumn.innerHTML += "</br>";
+            }
+        }.bind(this));
+        oModal.appendChild(oColumn);
+    }
+    showElement("idModal", "flex");
 }
