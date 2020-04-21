@@ -5,13 +5,14 @@ var path = require('path');
 const fs = require('fs');
 var socketIO = require('socket.io');var app = express();
 var server = http.Server(app);
-var io = socketIO(server);app.set('port', 5000);
+var io = socketIO(server);
+app.set('port', 61003);
 app.use('/static', express.static(__dirname + '/static'));// Routing
 app.get('/', function(request, response) {
   response.sendFile(path.join(__dirname, 'index.html'));
 });// Starts the server.
-server.listen(5000, function() {
-  console.log('Starting binokl server on port 5000');
+server.listen(app.get('port'), '0.0.0.0', function() {
+  console.log('Starting binokl server on port ' + app.get('port'));
 });
 
 // global variables
