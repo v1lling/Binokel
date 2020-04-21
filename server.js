@@ -16,8 +16,7 @@ server.listen(app.get('port'), '0.0.0.0', function() {
 });
 
 // global variables
-var iPlayerMin = 2;
-var oCardsRaw = fs.readFileSync('json/cards.json');
+var oCardsRaw = fs.readFileSync('static/json/cards.json');
 const aBinoklDeck = JSON.parse(oCardsRaw).concat(JSON.parse(oCardsRaw));
 let aDabSize = [0, 0, 6, 6, 4];
 let aSuits = ["herz", "kreuz", "bolle", "schippe"];
