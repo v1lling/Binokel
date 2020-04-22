@@ -587,22 +587,12 @@ function changeCardMeldeState(card) {
 function addToMyCards(cards) {
     myCards = myCards.concat(cards);
     myCards = myCards.sort(compareCards);
-    /*
-    var oDivCardsOne = document.getElementById("idDivCardsOne");
-    var oDivCardsTwo = document.getElementById("idDivCardsTwo");
-    var oDivCardsThree = document.getElementById("idDivCardsThree");
-    var oDivCards = myCards.length > 14 ? 
-        [oDivCardsOne, oDivCardsTwo, oDivCardsThree] :
-        [oDivCardsTwo, oDivCardsThree];
-*/
     var oDivCards = document.getElementById("idDivCardsOne");
     oDivCards.innerHTML = "";
-   // oDivCards.forEach(x => x.innerHTML = "");
     for(var i in myCards) {
         var oCardButton = document.createElement("button");
         var oValue = document.createElement("span");
         oValue.textContent = myCards[i].value;
-      //  oCardButton.textContent = 
         oCardButton.value = myCards[i].value;
         oCardButton.suit = myCards[i].suit;
         oCardButton.eyes = myCards[i].eyes;
@@ -610,7 +600,6 @@ function addToMyCards(cards) {
         oCardButton.className = "card playercard";
         oCardButton.onclick = onClickCard.bind(oCardButton);
         oCardButton.appendChild(oValue);
-      //  var row = Math.trunc(i / 7);
         var left = i % 7 * 14;
         var top = Math.trunc(i / 7) * 104;
         oCardButton.style.left = -100;
@@ -696,12 +685,24 @@ function showStichWin(data) {
 function showMeldung(data) {
     showElement("idDivMeldungen");
     var oDiv = document.getElementById("idDivMeldungen");
-    oDiv.innerHTML = data.name + ": ";
+    oDiv.innerHTML = data.name + " meldet " + data.punkte;
+    var topPx = 0;
     data.meldungen.forEach(function(meldung) {
-        oDiv.innerHTML += "</br>";
-        oDiv.innerHTML += meldung.combi;
+     //   oDiv.innerHTML += "</br>";
+      //  oDiv.innerHTML += meldung.combi + " - ";
+        var oMeldungRow = document.createElement("div");
+        oMeldungRow.className = "meldecardRow";
+        meldung.cards.forEach(function(card) {
+            var oCardButton = document.createElement("button");
+            var oValue = document.createElement("span");
+            oValue.textContent = card.value;
+            oCardButton.style.backgroundImage = "url(/static/img/" + card.suit + ".png)";
+            oCardButton.className = "card meldecard";
+            oCardButton.appendChild(oValue);
+            oMeldungRow.appendChild(oCardButton);
+        });
+        oDiv.appendChild(oMeldungRow);
     }.bind(this));
-    oDiv.innerHTML += data.punkte;
 }
 
 function compareCards(card1, card2){

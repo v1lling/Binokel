@@ -250,7 +250,7 @@ io.on('connection', function(socket) {
             oGame.aPlayers[iSpielhabenderIdx].stiche = oGame.aPlayers[iSpielhabenderIdx].stiche.concat(data.gedruckt);
         }
         var iPlayerIndex = aGame[socket.room].aPlayers.findIndex(x => x.id === socket.id);
-        var oMeldung = coundMeldung(data.gemeldet);
+        var oMeldung = countMeldung(data.gemeldet);
         oMeldung.name = oGame.aPlayers[iPlayerIndex].name;
         oMeldung.trumpf = data.trumpf ? data.trumpf : "";
         emitGameBroadcast('gemeldet', oMeldung);
@@ -459,7 +459,7 @@ io.on('connection', function(socket) {
         emitGameBroadcast('resetready');
     }
 
-    function coundMeldung(cards) {
+    function countMeldung(cards) {
         var oGame = aGame[socket.room];
         var aCounts = _createCounts(cards);
         
@@ -469,16 +469,56 @@ io.on('connection', function(socket) {
         var aFamilies = findFamily();
         aFamilies.forEach(function(family) {
             if (family.count == 2) {
-                aMeldung.push({combi:"doppeltefamilie", suit: family.suit, points: 1500})
+                aMeldung.push({
+                    combi:"doppeltefamilie",
+                    suit: family.suit,
+                    points: 1500,
+                    cards: [
+                        {suit: family.suit, value: 'A'},
+                        {suit: family.suit, value: 'A'},
+                        {suit: family.suit, value: '10'},
+                        {suit: family.suit, value: '10'},
+                        {suit: family.suit, value: 'K'},
+                        {suit: family.suit, value: 'K'},
+                        {suit: family.suit, value: 'O'},
+                        {suit: family.suit, value: 'O'},
+                        {suit: family.suit, value: 'U'},
+                        {suit: family.suit, value: 'U'},
+                    ]
+                });
             } else {
                 var points = family.suit == oGame.sTrumpf ? 150 : 100;
-                aMeldung.push({combi:"familie", suit: family.suit, points: points})
+                aMeldung.push({
+                    combi:"familie",
+                    suit: family.suit,
+                    points: points,
+                    cards: [
+                        {suit: family.suit, value: 'A'},
+                        {suit: family.suit, value: '10'},
+                        {suit: family.suit, value: 'K'},
+                        {suit: family.suit, value: 'O'},
+                        {suit: family.suit, value: 'U'},
+                    ]
+                });
             }
         });
 
         var aPaare = findPaar();
         if (aPaare.length === 4) {
-            aMeldung.push({combi: "rundlauf", points: 240})
+            aMeldung.push({
+                combi: "rundlauf",
+                points: 240,
+                cards: [
+                    {suit: "schippe", value: 'K'},
+                    {suit: "schippe", value: 'O'},
+                    {suit: "kreuz", value: 'K'},
+                    {suit: "kreuz", value: 'O'},
+                    {suit: "bolle", value: 'K'},
+                    {suit: "bolle", value: 'O'},
+                    {suit: "herz", value: 'K'},
+                    {suit: "herz", value: 'O'},
+                ]
+            });
         } else {
             aPaare.forEach(function(paar) {
                 var bIsInFamily, bIsDoubleFamily = false;
@@ -492,25 +532,38 @@ io.on('connection', function(socket) {
                 })
                 var points = paar.suit == oGame.sTrumpf ? 40 : 20;
                 if (paar.count == 1 && !bIsInFamily|| bIsInFamily && paar.count == 2 && !bIsDoubleFamily) {
-                    aMeldung.push({combi:"paar", suit: paar.suit, points: points});
+                    aMeldung.push({combi:"paar", suit: paar.suit, points: points, cards: [{suit: paar.suit, value:"K"}, {suit:paar.suit, value:"O"}]});
                 } else if (paar.count == 2 && !bIsInFamily) {
-                    aMeldung.push({combi:"paar", suit: paar.suit, points: points});
-                    aMeldung.push({combi:"paar", suit: paar.suit, points: points});
+                    aMeldung.push({combi:"paar", suit: paar.suit, points: points, cards: [{suit: paar.suit, value:"K"}, {suit:paar.suit, value:"O"}]});
+                    aMeldung.push({combi:"paar", suit: paar.suit, points: points, cards: [{suit: paar.suit, value:"K"}, {suit:paar.suit, value:"O"}]});
                 }
             });
         }
         
         var iBinokel = findBinokel();
         if (iBinokel === 1) {
-            aMeldung.push({combi: "binokel", points: 40});
+            aMeldung.push({combi: "binokel", points: 40, cards: [{suit: "schippe", value:"O"}, {suit: "bolle", value:"U"}]});
         } else if (iBinokel === 2) {
-            aMeldung.push({combi: "doppelterbinokel", points: 300});
+            aMeldung.push({combi: "doppelterbinokel", points: 300, cards: [{suit: "schippe", value:"O"}, {suit: "bolle", value:"U"}, {suit: "schippe", value:"O"}, {suit: "bolle", value:"U"}]});
         }
 
         var aGleiche = findGleiche();
         aGleiche.forEach(function(gleiche) {
             if (gleiche.count > 1) {
-                aMeldung.push({combi: "8gleiche", points: 1000});
+                aMeldung.push({
+                    combi: "8gleiche",
+                    points: 1000,
+                    cards: [
+                        {suit: "schippe", value: gleiche.bild},
+                        {suit: "schippe", value: gleiche.bild},
+                        {suit: "kreuz", value: gleiche.bild},
+                        {suit: "kreuz", value: gleiche.bild},
+                        {suit: "bolle", value: gleiche.bild},
+                        {suit: "bolle", value: gleiche.bild},
+                        {suit: "herz", value: gleiche.bild},
+                        {suit: "herz", value: gleiche.bild},
+                    ]
+                });
             } else {
                 var points = 0;
                 switch(gleiche.bild) {
@@ -527,15 +580,24 @@ io.on('connection', function(socket) {
                         points += 40;
                         break;
                 }
-                aMeldung.push({combi: "4gleiche", points: points});
+                aMeldung.push({
+                    combi: "4gleiche",
+                    points: points,
+                    cards: [
+                        {suit: "schippe", value: gleiche.bild},
+                        {suit: "kreuz", value: gleiche.bild},
+                        {suit: "bolle", value: gleiche.bild},
+                        {suit: "herz", value: gleiche.bild},
+                    ]
+                });
             }
         });
 
         var iDiss = aCounts[oGame.sTrumpf + "7"];
         if (iDiss) {
-            aMeldung.push({combi: "diss", suit: oGame.sTrumpf, points: 10});
+            aMeldung.push({combi: "diss", suit: oGame.sTrumpf, points: 10, cards: [{suit: oGame.sTrumpf, value: "7"}]});
             if (iDiss > 1) {
-                aMeldung.push({combi: "diss", suit: oGame.sTrumpf, points: 10});
+                aMeldung.push({combi: "diss", suit: oGame.sTrumpf, points: 10, cards: [{suit: oGame.sTrumpf, value: "7"}]});
             }
         }
 

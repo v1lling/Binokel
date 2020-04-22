@@ -156,8 +156,26 @@
   top: 50px;
 }
 #idDivMeldungen {
+  justify-content: center;
   display: none;
   height: 100%;
+  flex-direction: column;
+  overflow: auto;
+}
+#idDivMeldungen .meldecardRow {
+  min-height: 15%;
+  padding-top: 0.5rem;
+}
+#idDivMeldungen .meldecardRow .meldecard {
+  font-size: 1rem;
+  width: 7%;
+  height: 100%;
+  margin-right: 0.25rem;
+}
+@media all and (min-width: 0px) and (max-width: 600px) {
+  #idDivMeldungen .meldecardRow .meldecard {
+    font-size: 0.5rem;
+  }
 }
 .section {
   overflow: hidden;
@@ -302,7 +320,8 @@
 .clCardRow .card {
   height: 100%;
   position: absolute;
-  transition: left 1s linear;
+  transition-property: top, left;
+  transition-duration: 1s;
 }
 .card {
   box-sizing: border-box;
