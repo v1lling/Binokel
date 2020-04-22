@@ -58,10 +58,12 @@ socket.on('dabopened', function(data) {
     oCardButton.classList.remove("umgedeckt");
     oCardButton.open = true;
     oCardButton.style.backgroundImage = "url(/static/img/" + data.card.suit + ".png)";
-    oCardButton.textContent = data.card.value;
     oCardButton.value = data.card.value;
     oCardButton.suit = data.card.suit;
     oCardButton.eyes = data.card.eyes;
+    var oValue = document.createElement("span");
+    oValue.textContent = data.card.value;
+    oCardButton.appendChild(oValue);
 })
 
 socket.on('openrooms', function(data) {
@@ -171,6 +173,7 @@ socket.on('weggegangen', function(data) {
 
 socket.on('reizdone', function(data) {
     showCurrentZug(data.reizID);
+    $('.weggegangen').removeClass('weggegangen');
     if (data.reizID === socket.id) {
         // du hast es game
         myDabTurn = true;
@@ -181,7 +184,7 @@ socket.on('reizdone', function(data) {
 socket.on('darfmelde', function(data) {
     if (data.id === socket.id) {
         myMeldeTurn = true;
-        showElement("idButtonMelden", "block");
+        showElement("idDivMelden");
     }
     showCurrentZug(data.id);
 })
@@ -239,11 +242,11 @@ socket.on('darfstechen', function(data) {
 })
 
 socket.on('gamestats', function(data) {
-    theGameStats = data.stats;
+    theGameStats = data;
     console.log(data);
-   // if (data.roundEnd) {
+    if (data.roundEnd) {
         showGameStats();
-   // }
+    }
 
 })
 
@@ -316,8 +319,10 @@ function onWeg() {
 }
 
 function onMelden() {
-    hideElement("idButtonMelden");
+    //hideElement("idButtonMelden");
+    hideElement("idDivMelden");
     hideElement("idDivTrumpf");
+    $('.activetrumpf').removeClass('activetrumpf');
     myMeldeTurn = false;
 
     var aGemeldet = [];
@@ -358,9 +363,9 @@ function onChooseTrumpf(srcElement) {
     for (var i in trumpfbutton) {
         var button = document.getElementById(trumpfbutton[i]);
         if (trumpfbutton[i] != srcElement.id) {
-            button.classList.remove("active");
+            button.classList.remove("activetrumpf");
         } else {
-            button.classList.add("active");
+            button.classList.add("activetrumpf");
             myTrumpf = button.value;
         }
     }
@@ -372,18 +377,19 @@ function onChooseTrumpf(srcElement) {
 
 function onClickCard(e) {
     // TODO: when is my turn, when wird gestochen/sortiert
-    if (myStechTurn && e.srcElement.suit) {
+    var clickedCard = e.currentTarget;
+    if (myStechTurn && clickedCard.suit) {
             var oDivCards = document.getElementById("idDivCardsOne");
             var oStichCards = document.getElementById("idDivStich");
             var isValid = false;
             //leg karte
             //hab ich karte suit oder trumpf
             if (oStichCards.childElementCount == thePlayers.length || !oStichCards.hasChildNodes() ) {
-                socket.emit('steche', {suit: e.srcElement.suit, value: e.srcElement.value, eyes: e.srcElement.eyes});
-                var cardIdx = myCards.findIndex(x => x.suit == e.srcElement.suit && x.eyes == e.srcElement.eyes);
+                socket.emit('steche', {suit: clickedCard.suit, value: clickedCard.value, eyes: clickedCard.eyes});
+                var cardIdx = myCards.findIndex(x => x.suit == clickedCard.suit && x.eyes == clickedCard.eyes);
                 myCards.splice(cardIdx, 1);
                 
-                oDivCards.removeChild(e.srcElement);
+                oDivCards.removeChild(clickedCard);
                 updateCardPosition();
                 myStechTurn = false;
             } else {
@@ -395,18 +401,18 @@ function onClickCard(e) {
                         if (theStichWinner.card.suit == theTrumpf) {
                             // muss nicht stechen
                             // muss selbe farbe wie start
-                            if (e.srcElement.suit == firstCard.suit) {
+                            if (clickedCard.suit == firstCard.suit) {
                                 isValid = true;
                             }
                         } else {
                             // muss stichwinner stechen
                             var iCanIStech = myCards.findIndex(x => x.eyes > theStichWinner.card.eyes && x.suit == theStichWinner.card.suit);
                             if (iCanIStech != -1) {
-                                if (e.srcElement.suit == firstCard.suit && e.srcElement.eyes > theStichWinner.card.eyes) {
+                                if (clickedCard.suit == firstCard.suit && clickedCard.eyes > theStichWinner.card.eyes) {
                                     isValid = true;
                                 }
                             } else {
-                                if (e.srcElement.suit == firstCard.suit) {
+                                if (clickedCard.suit == firstCard.suit) {
                                     isValid = true;
                                 }
                             }
@@ -416,11 +422,11 @@ function onClickCard(e) {
                          // muss stechen
                          var iCanIStech = myCards.findIndex(x => x.eyes > theStichWinner.card.eyes && x.suit == firstCard.suit);
                          if (iCanIStech != -1) {
-                             if (e.srcElement.suit == firstCard.suit && e.srcElement.eyes > theStichWinner.card.eyes) {
+                             if (clickedCard.suit == firstCard.suit && clickedCard.eyes > theStichWinner.card.eyes) {
                                  isValid = true;
                              }
                          } else {
-                             if (e.srcElement.suit == firstCard.suit) {
+                             if (clickedCard.suit == firstCard.suit) {
                                  isValid = true;
                              }
                          }
@@ -432,18 +438,18 @@ function onClickCard(e) {
                         // muss stichwinner stechen wenns geht
                         var iCanIStech = myCards.findIndex(x => x.eyes > theStichWinner.card.eyes && x.suit == theStichWinner.card.suit);
                         if (iCanIStech != -1) {
-                            if (e.srcElement.suit == theTrumpf && e.srcElement.eyes > theStichWinner.card.eyes) {
+                            if (clickedCard.suit == theTrumpf && clickedCard.eyes > theStichWinner.card.eyes) {
                                 isValid = true;
                             }
                         } else {
                             // kann irgendein trumpf
-                            if (e.srcElement.suit == theTrumpf) {
+                            if (clickedCard.suit == theTrumpf) {
                                 isValid = true;
                             }
                         }
                     } else {
                         // kann irgendein trumpf
-                        if (e.srcElement.suit == theTrumpf) {
+                        if (clickedCard.suit == theTrumpf) {
                             isValid = true;
                         }
                     }
@@ -453,32 +459,34 @@ function onClickCard(e) {
                     isValid = true;
                 }
                 if (isValid) {
-                    socket.emit('steche', {suit: e.srcElement.suit, value: e.srcElement.value, eyes: e.srcElement.eyes});
-                    var cardIdx = myCards.findIndex(x => x.suit == e.srcElement.suit && x.eyes == e.srcElement.eyes);
+                    socket.emit('steche', {suit: clickedCard.suit, value: clickedCard.value, eyes: clickedCard.eyes});
+                    var cardIdx = myCards.findIndex(x => x.suit == clickedCard.suit && x.eyes == clickedCard.eyes);
                     myCards.splice(cardIdx, 1);
-                    oDivCards.removeChild(e.srcElement);  
+                    oDivCards.removeChild(clickedCard);  
                     updateCardPosition();
                     myStechTurn = false;
                 } else {
-                    e.srcElement.classList.add("clInvalidCard");
+                    clickedCard.classList.add("clInvalidCard");
                     setTimeout(function() {
-                        e.srcElement.classList.remove("clInvalidCard");
+                        clickedCard.classList.remove("clInvalidCard");
                     }.bind(this), 500);
                 }             
             } 
     } else if (myDabTurn) {
-        if (!e.srcElement.open) {
-            aDab[e.srcElement.idx].open = true;
-            e.srcElement.open = true;
+        if (!clickedCard.open) {
+            aDab[clickedCard.idx].open = true;
+            clickedCard.open = true;
             // open dab
-            socket.emit('dabopen', e.srcElement.idx);
+            socket.emit('dabopen', clickedCard.idx);
             var iClosedDab = aDab.findIndex(x => x.open == undefined);
             if (iClosedDab === -1) {
                 setTimeout(function() {
                     // wenn alle offen
-                    showElement("idButtonMelden", "block");
-                    document.getElementById("idButtonMelden").disabled = true;
+                    showElement("idDivMelden");
+                    //showElement("idButtonMelden", "block");
                     showElement("idDivTrumpf");
+
+                    document.getElementById("idButtonMelden").disabled = true;
                     hideElement("idButtonDabOpen");
                     var oDivDab = document.getElementById("idDivDab");
                     oDivDab.innerHTML = "";
@@ -490,8 +498,8 @@ function onClickCard(e) {
                 
             }
         }
-    } else if (myMeldeTurn && e.srcElement.suit) {
-        changeCardMeldeState(e.srcElement);
+    } else if (myMeldeTurn && clickedCard.suit) {
+        changeCardMeldeState(clickedCard);
         if ($(".cardmeldestatedrucke").length === aDab.length && myTrumpf) {
             // genug gedruckt
             document.getElementById("idButtonMelden").disabled = false;
@@ -521,13 +529,11 @@ function updatePlayer(playerweg) {
     var playerIdx = thePlayers.findIndex(x => x.id === socket.id);
     for (var i = 0; i < thePlayers.length; i++) {
         // TODO update the labels
-        if (playerweg) {
-            if (playerweg == thePlayers[playerIdx].id) {
-                document.getElementById(aPlayerLocConfig[thePlayers.length - 2][i]).innerHTML += "weg";
-            }
-        } else {
-            document.getElementById(aPlayerLocConfig[thePlayers.length - 2][i]).innerHTML = thePlayers[playerIdx].name;
+        if (playerweg === thePlayers[playerIdx].id) {
+            document.getElementById(aPlayerLocConfig[thePlayers.length - 2][i]).classList.add("weggegangen");
+           // document.getElementById(aPlayerLocConfig[thePlayers.length - 2][i]).innerHTML += "weg";
         }
+        document.getElementById(aPlayerLocConfig[thePlayers.length - 2][i]).innerHTML = thePlayers[playerIdx].name;
         playerIdx = playerIdx == thePlayers.length - 1 ? 0 : playerIdx + 1;
     }
 }
@@ -606,7 +612,7 @@ function addToMyCards(cards) {
         oCardButton.appendChild(oValue);
       //  var row = Math.trunc(i / 7);
         var left = i % 7 * 14;
-        var top = Math.trunc(i / 7) * 101;
+        var top = Math.trunc(i / 7) * 104;
         oCardButton.style.left = -100;
         oCardButton.style.top = top + "%";
         oDivCards.appendChild(oCardButton);
@@ -624,7 +630,7 @@ function updateCardPosition() {
     for (var i = 0; i < oDivCards.childNodes.length; i++) {
         var oCard = oDivCards.childNodes[i];
         var left = i % 7 * 14;
-        var top = Math.trunc(i / 7) * 101;
+        var top = Math.trunc(i / 7) * 104;
         oCard.style.left = left + "%";
         oCard.style.top = top + "%";
     }
@@ -659,6 +665,7 @@ function showReizValue(data) {
 function showTrumpf(trumpf) {
     var oReizBubble = document.getElementById("idReizBubble");
     oReizBubble.style.backgroundImage = "url(/static/img/" + trumpf + ".png)";
+    oReizBubble.textContent = "";
     showElement("idReizBubble");
 }
 
@@ -750,19 +757,31 @@ function buildLobbyPlayer(parent, player, showteam ) {
 function showGameStats() {
     var oModal = document.getElementById("idModalContent");
     oModal.innerHTML = "";
-    for (var stat in theGameStats) {
+    if (!Object.keys(theGameStats).length ) {
+        return;
+    }
+    // First Column
+
+    var oFirstColumn = document.createElement("div");
+    oFirstColumn.innerHTML += "</br>";
+    theGameStats.stats[Object.keys(theGameStats.stats)[0]].forEach(function(playerstat) {
+        oFirstColumn.innerHTML += playerstat.type.substring(0,1) + "</br>";
+    }.bind(this));
+    oModal.appendChild(oFirstColumn);
+    // Player Columns
+    for (var stat in theGameStats.stats) {
         var oColumn = document.createElement("div");
         oColumn.innerHTML += stat + "</br>";
-        var totalPoints = 0;
-        theGameStats[stat].forEach(function(playerstat) {
-            if (playerstat) {
-                totalPoints += playerstat;
-                oColumn.innerHTML += playerstat + "</br>";
+        theGameStats.stats[stat].forEach(function(playerstat) {
+            if (playerstat.val) {
+                oColumn.innerHTML += playerstat.val + "</br>";
             } else {
                 oColumn.innerHTML += "</br>";
             }
         }.bind(this));
-        oColumn.innerHTML += "<br></br>" + totalPoints;
+        var points = document.createElement("label");
+        points.innerHTML = theGameStats.points[stat];
+        oColumn.appendChild(points);
         oModal.appendChild(oColumn);
     }
     showElement("idModal", "flex");

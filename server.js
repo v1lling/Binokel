@@ -147,9 +147,9 @@ io.on('connection', function(socket) {
             sortedPlayers.push(oGame.aPlayers[0]);
             var secondTeamPlayer = oGame.aPlayers.findIndex(x => x.team != firstTeam);
             sortedPlayers.push(oGame.aPlayers[secondTeamPlayer]);
-            var firstTeamPlayer = oGame.aPlayers.findIndex(x => x.team == firstTeam);
+            var firstTeamPlayer = oGame.aPlayers.findIndex(x => x.team == firstTeam && x.id != sortedPlayers[0].id);
             sortedPlayers.push(oGame.aPlayers[firstTeamPlayer]);
-            secondTeamPlayer = oGame.aPlayers.findIndex(x => x.team != firstTeam);
+            secondTeamPlayer = oGame.aPlayers.findIndex(x => x.team != firstTeam && x.id != sortedPlayers[1].id);
             sortedPlayers.push(oGame.aPlayers[secondTeamPlayer]);
 
             oGame.aPlayers = sortedPlayers;
@@ -198,7 +198,7 @@ io.on('connection', function(socket) {
             oGame.aReizer.push(oGame.aPlayers[iNextReizerIndex]);
             oGame.iReizerIdx = 1;
             var oReizData = {
-                reizIDlast: socket.id,
+                //reizIDlast: socket.id,
                 reizIDnext: oGame.aReizer[oGame.iReizerIdx].id,
                 reizVal: oGame.iReizVal
             }
@@ -213,7 +213,7 @@ io.on('connection', function(socket) {
                 var oReizData = {
                     reizIDnext: oGame.aReizer[oGame.iReizerIdx].id,
                     reizVal: oGame.iReizVal,
-                    reizIDlast: socket.id
+                    //reizIDlast: socket.id
                 }
                 emitGameBroadcast('reizturn', oReizData);
             } else {
@@ -321,17 +321,19 @@ io.on('connection', function(socket) {
                     }
                     points = Math.round(points / 10) * 10;
                     oGame.aPlayers[index].gamestats[oGame.iGameIdx].stichval = points;
+                    var gemeldet = oGame.aPlayers[index].gamestats[oGame.iGameIdx].meldung.punkte;
                     if (oGame.aGameStats[oGame.iGameIdx].reizID === player.id) {
                         // check if geschafft
-                        var gemeldet = oGame.aPlayers[index].gamestats[oGame.iGameIdx].meldeval;
-                        var gereizt = oGame.aPlayers[index].gamestats[oGame.iGameIdx].reizval;
+                        var gereizt = oGame.aPlayers[index].gamestats[oGame.iGameIdx].reiz;
                         if (points + gemeldet >= gereizt) {
-                            oGame.aPlayers[index].points += points;
+                            oGame.aPlayers[index].points += points + gemeldet;
                         } else {
                             oGame.aPlayers[index].points -= gereizt + 100;
                         }
                     } else {
-                        oGame.aPlayers[index].points += points;
+                        if (points > 0) {
+                            oGame.aPlayers[index].points += points + gemeldet;
+                        }
                     }
 
                 });
@@ -647,19 +649,30 @@ io.on('connection', function(socket) {
     }
 
     function sendGameStats(bRoundend) {
-        var oCurrentGameStats = {};
-        oCurrentGameStats.roundEnd = bRoundend;
-        oCurrentGameStats.stats = {};
         var oGame = aGame[socket.room];
+        var oCurrentGameStats = {};
+        oCurrentGameStats.stats = {};
+        oCurrentGameStats.points = {};
+        oCurrentGameStats.roundEnd = bRoundend;
         oGame.aPlayers.forEach(function(player) {
             oCurrentGameStats.stats[player.name] = [];
             player.gamestats.forEach(function(gamestat) {
-                oCurrentGameStats.stats[player.name].push(gamestat.reiz);
-                oCurrentGameStats.stats[player.name].push(gamestat.meldung ? gamestat.meldung.punkte : 0);
-                oCurrentGameStats.stats[player.name].push(gamestat.stichval);
+                oCurrentGameStats.stats[player.name].push({
+                    val: gamestat.reiz, 
+                    type: "Reiz"
+                });
+                oCurrentGameStats.stats[player.name].push({
+                    val: gamestat.meldung ? gamestat.meldung.punkte : 0,
+                    type: "Meldung"
+                });
+                oCurrentGameStats.stats[player.name].push({
+                    val: gamestat.stichval,
+                    type: "Stich"
+                });
             }.bind(this));
-            
+            oCurrentGameStats.points[player.name] = player.points;
         }.bind(this));
+        
         emitGameBroadcast('gamestats', oCurrentGameStats);
     }
 
@@ -678,25 +691,15 @@ io.on('connection', function(socket) {
 });
 
 
-// OPEN
-
-// MELDEN ENTGEGENNEHMEN (bei nicht spielhabenden)
-// ZÄHLEN
-//
-//
-
+// TODO
 
 // meldungen vom team 1 anzeigen, dann team 2 melden
 
 // gedrucktes zählen (drin?)
-// fehler falls nicht gedruckt
 
 // es wird grade paar gezählt das schon in familie drin is
 
-
 // was wenn "nab" gedrückt wird, nicht gespielt werden will
-
-// anderes gemeldet anzeigen (dialog?)
 
 // warum roominterval nicht gecleared wenn man room joint oder erstellt
 
@@ -706,3 +709,17 @@ io.on('connection', function(socket) {
 
 // beim melden kann der nicht spielhabende auch den dab anklicken zum melden lool
 
+// WICHTIG:
+
+// punktestand übersichtlicher
+// richtig rechnen
+
+// melden besser anzeigen
+
+// direkt "nab" drücken können wenn mans nicht schafft
+
+// dealer anzeigen
+// wer kommt raus
+
+
+// bei rundlauf nicht K und O als 4 gleiche zählen

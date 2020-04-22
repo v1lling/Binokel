@@ -5,6 +5,10 @@
     </div>
     <button onclick=onHideModal()>CLOSE</button>
   </div>
+  <div class="clTopMenu">
+    <button class="clButtonLastDab"></button>
+    <button onclick="showGameStats()" class="clButtonStats"></button>
+  </div>
   <div class="clGameplayPlayer section">
       <div class="clPlayerRow">
         <div class="clPlayerName">
@@ -49,15 +53,14 @@
         </div>
         <button onclick="onReiz()">REIZ</button>
       </div>
-      <div id="idDivMelden" class="clDivMelden">
-        <button id="idButtonMelden" onclick="onMelden()" style='display:none'>MELDE</button>
-        <div id="idDivTrumpf">
+      <div id="idDivMelden" class="clDivMelden" style='display:none'>
+        <div id="idDivTrumpf" style='display:none'>
           <button id="idButtonTrumpfSchippe" class="trumpfbutton" value="schippe" onclick="onChooseTrumpf(this)"></button>
           <button id="idButtonTrumpfKreuz" class="trumpfbutton" value="kreuz" onclick="onChooseTrumpf(this)"></button>
           <button id="idButtonTrumpfHerz" class="trumpfbutton" value="herz" onclick="onChooseTrumpf(this)"></button>
           <button id="idButtonTrumpfBolle" class="trumpfbutton" value="bolle" onclick="onChooseTrumpf(this)"></button>
-
         </div>
+        <button id="idButtonMelden" onclick="onMelden()">MELDE</button>
       </div>
     </div>
 

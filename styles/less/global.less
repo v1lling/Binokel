@@ -1,12 +1,16 @@
 @primary: #037d50; // #11998e;
 @secondary: #38ef7d;
 
+@myred: #d04444;
+
 @teamone: blue;
 @teamtwo: red;
 
 @readygreen: #38ef7d;
 
 @borderradius: 5px;
+
+@background: #222222;
 
 @font-face {
   font-family: 'Roboto';
@@ -29,7 +33,7 @@
 }
 
 body {
-  background-color: whitesmoke;
+  background-color: #161f1c;
   font-family: "Roboto";
   font-size: 2rem;
   color: white;
@@ -49,15 +53,13 @@ button {
     background: transparent;
     border-radius: @borderradius;
     font-family: inherit;
-    border: 3px solid @gray;
-    color: @gray;
+    //border: 3px solid @gray;
+    //color: @gray;
+    border: 3px solid white;
+    color: white;
     font-size: 2rem;
     &:hover {
       cursor: pointer;
-    }
-    &:active {
-      background: @gray;
-      color: White;
     }
 }
 
@@ -66,7 +68,9 @@ input {
   background: transparent;
   border-radius: @borderradius;
   font-family: inherit;
-  color: @gray;
+
+  //color: @gray;
+  color: white;
   border:none;
 }
 
@@ -88,25 +92,31 @@ input {
   flex-direction: column;
   justify-content: center;
   width: 100%;
-  border-radius: 5px ;
+  border-radius: 0 0 5px 5px;
   -webkit-box-shadow: 0 8px 6px -6px black;
   -moz-box-shadow: 0 8px 6px -6px black;
   box-shadow: 0 8px 6px -6px black;
-  background-image: linear-gradient(#267bb7, #184a75, #012b6b);
+  background-image: linear-gradient(#ffffff, #cecece, #ffffff);
+  color: black;
+  font-family: 'Roboto-bold';
 }
 
 .clPage {
-  background: #222222;
+  background: @background;
   height: 100%;
 }
 
 
 // PHONE:
 @media all and (min-width:0px) and (max-width: 600px) {
+  body, button, input {
+    font-size: 1.25rem;
+  }
   body {
-    font-size: 1.5rem;
+    background: @background;
   }
   button {
-    font-size: 1.5rem;
+    touch-action: manipulation;
   }
+
 }
