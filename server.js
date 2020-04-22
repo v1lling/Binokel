@@ -15,8 +15,13 @@ server.listen(app.get('port'), '0.0.0.0', function() {
   console.log('Starting binokl server on port ' + app.get('port'));
 });
 
+// For uberspace, take json from absolute path
+try {
+    var oCardsRaw = fs.readFileSync('/var/www/virtual/binokel/html/binokl/binokel/static/json/cards.json');
+} catch (error){
+    var oCardsRaw = fs.readFileSync('static/json/cards.json');
+}
 // global variables
-var oCardsRaw = fs.readFileSync('/var/www/virtual/binokel/html/binokl/binokel/static/json/cards.json');
 const aBinoklDeck = JSON.parse(oCardsRaw).concat(JSON.parse(oCardsRaw));
 let aDabSize = [0, 0, 6, 6, 4];
 let aSuits = ["herz", "kreuz", "bolle", "schippe"];
