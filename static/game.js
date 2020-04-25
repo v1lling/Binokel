@@ -14,6 +14,7 @@ var myGame = false;
 var theStichWinner = {};
 var gameStarted = false;
 var thePlayers = [];
+var theLastStich = [];
 var theGameStats = {};
 
 // SOCKET HANDLERS
@@ -25,6 +26,7 @@ socket.on('dealer', function(data) {
     if (data === socket.id) {
         showElement("idButtonHandOut", "block");
     }
+    updatePlayer("", data);
 })
 
 socket.on('cards', function(data) {
@@ -245,9 +247,13 @@ socket.on('gamestats', function(data) {
     theGameStats = data;
     console.log(data);
     if (data.roundEnd) {
-        showGameStats();
+        setTimeout(showGameStats, 1000);
     }
 
+})
+
+socket.on('laststich', function(data) {
+    theLastStich = data;
 })
 
 // BUTTON HANDLERS
@@ -385,13 +391,7 @@ function onClickCard(e) {
             //leg karte
             //hab ich karte suit oder trumpf
             if (oStichCards.childElementCount == thePlayers.length || !oStichCards.hasChildNodes() ) {
-                socket.emit('steche', {suit: clickedCard.suit, value: clickedCard.value, eyes: clickedCard.eyes});
-                var cardIdx = myCards.findIndex(x => x.suit == clickedCard.suit && x.eyes == clickedCard.eyes);
-                myCards.splice(cardIdx, 1);
-                
-                oDivCards.removeChild(clickedCard);
-                updateCardPosition();
-                myStechTurn = false;
+                hauCardRaus();
             } else {
                 var firstCard = oStichCards.childNodes[0];
                 var iTrumpfIdx = myCards.findIndex(x => x.suit === theTrumpf);
@@ -459,12 +459,7 @@ function onClickCard(e) {
                     isValid = true;
                 }
                 if (isValid) {
-                    socket.emit('steche', {suit: clickedCard.suit, value: clickedCard.value, eyes: clickedCard.eyes});
-                    var cardIdx = myCards.findIndex(x => x.suit == clickedCard.suit && x.eyes == clickedCard.eyes);
-                    myCards.splice(cardIdx, 1);
-                    oDivCards.removeChild(clickedCard);  
-                    updateCardPosition();
-                    myStechTurn = false;
+                    hauCardRaus();
                 } else {
                     clickedCard.classList.add("clInvalidCard");
                     setTimeout(function() {
@@ -509,6 +504,41 @@ function onClickCard(e) {
             }
         }
     }
+
+    function hauCardRaus() {
+        socket.emit('steche', {suit: clickedCard.suit, value: clickedCard.value, eyes: clickedCard.eyes});
+        var cardIdx = myCards.findIndex(x => x.suit == clickedCard.suit && x.eyes == clickedCard.eyes);
+        clickedCard.style.top = "-200%";
+        myCards.splice(cardIdx, 1);
+        setTimeout(function() {
+            oDivCards.removeChild(clickedCard);
+            updateCardPosition();
+        }.bind(this), 1000)
+        myStechTurn = false;
+    }
+}
+
+function onShowLastStich() {
+    if (theLastStich.length) {
+        showElement("idDivMeldungen");
+        var oDiv = document.getElementById("idDivMeldungen");
+        oDiv.innerHTML = "Letzer Stich:"
+        var oMeldungRow = document.createElement("div");
+        oMeldungRow.className = "meldecardRow";
+        theLastStich.forEach(function(stich) {
+            var oCardButton = document.createElement("button");
+            var oValue = document.createElement("span");
+            oValue.textContent = stich.card.value;
+            oCardButton.style.backgroundImage = "url(/static/img/" + stich.card.suit + ".png)";
+            oCardButton.className = "card meldecard";
+            oCardButton.appendChild(oValue);
+            oMeldungRow.appendChild(oCardButton);
+        });
+        oDiv.appendChild(oMeldungRow);
+        setTimeout(function() {
+            hideElement("idDivMeldungen");
+        }, 2000);
+    }
 }
 
 function onHideModal() {
@@ -520,7 +550,7 @@ function onHideModal() {
 * DOM UTILS
 *
 */
-function updatePlayer(playerweg) {
+function updatePlayer(playerweg, dealer) {
     var aPlayerLocConfig = [
         ["idPlayerBottom", "idPlayerTop"],
         ["idPlayerBottom", "idPlayerMidTwo", "idPlayerTop"],
@@ -528,12 +558,19 @@ function updatePlayer(playerweg) {
     ];
     var playerIdx = thePlayers.findIndex(x => x.id === socket.id);
     for (var i = 0; i < thePlayers.length; i++) {
-        // TODO update the labels
-        if (playerweg === thePlayers[playerIdx].id) {
-            document.getElementById(aPlayerLocConfig[thePlayers.length - 2][i]).classList.add("weggegangen");
-           // document.getElementById(aPlayerLocConfig[thePlayers.length - 2][i]).innerHTML += "weg";
-        }
-        document.getElementById(aPlayerLocConfig[thePlayers.length - 2][i]).innerHTML = thePlayers[playerIdx].name;
+        if (playerweg) {
+            if (playerweg === thePlayers[playerIdx].id) {
+                document.getElementById(aPlayerLocConfig[thePlayers.length - 2][i]).classList.add("weggegangen");
+            }
+        } else if (dealer) {
+            if (dealer === thePlayers[playerIdx].id) {
+                document.getElementById(aPlayerLocConfig[thePlayers.length - 2][i]).innerHTML = "[D]" + thePlayers[playerIdx].name;
+            } else {
+                document.getElementById(aPlayerLocConfig[thePlayers.length - 2][i]).innerHTML = thePlayers[playerIdx].name;
+            }
+        } else {
+            document.getElementById(aPlayerLocConfig[thePlayers.length - 2][i]).innerHTML = thePlayers[playerIdx].name;
+        }    
         playerIdx = playerIdx == thePlayers.length - 1 ? 0 : playerIdx + 1;
     }
 }

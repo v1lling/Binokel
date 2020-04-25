@@ -224,10 +224,11 @@ io.on('connection', function(socket) {
                 }
                 oGame.aGameStats.push(oReizDone);
                 oGame.aPlayers.forEach(function(player) {
-                    if (player.id == oGame.aReizer[0].id) {
-                        player.gamestats.push({reiz : oGame.iReizVal});
+                    if (player.id == oGame.aReizer[0].id
+                        || oGame.aPlayers.length === 4 && player.team == oGame.aReizer[0].team) {
+                        player.gamestats.push({reiz : oGame.iReizVal, meldung: 0, stichval: 0});
                     } else {
-                        player.gamestats.push({reiz : 0});
+                        player.gamestats.push({reiz : 0, meldung: 0, stichval: 0});
                     }
                 }.bind(this));
                 sendGameStats();
@@ -255,7 +256,11 @@ io.on('connection', function(socket) {
         oMeldung.trumpf = data.trumpf ? data.trumpf : "";
         emitGameBroadcast('gemeldet', oMeldung);
 
-        oGame.aPlayers[iPlayerIndex].gamestats[oGame.iGameIdx].meldung = oMeldung;
+        oGame.aPlayers[iPlayerIndex].gamestats[oGame.iGameIdx].meldung += oMeldung.punkte;
+        if (oGame.aPlayers.length === 4) {
+            var iKollegIdx = oGame.aPlayers.findIndex(x => x.id != socket.id && x.team == oGame.aPlayers[iPlayerIndex].team);
+            oGame.aPlayers[iKollegIdx].gamestats[oGame.iGameIdx].meldung += oMeldung.punkte;
+        }
         oGame.aPlayers[iPlayerIndex].gemeldet = true;
         // haben alle gemeldet?
         var iOpenMelder = oGame.aPlayers.findIndex(x => x.gemeldet === false);
@@ -276,8 +281,8 @@ io.on('connection', function(socket) {
             var aMeldungen = [];
             oGame.aPlayers.forEach(function(player) {
                 aMeldungen.push({
-                    meldungen: player.gamestats[oGame.iGameIdx].meldung.meldungen,
-                    punkte: player.gamestats[oGame.iGameIdx].meldung.punkte,
+                    meldungen: oMeldung.meldungen,
+                    punkte: oMeldung.punkte,
                     name: player.name
                 });
             });
@@ -295,6 +300,7 @@ io.on('connection', function(socket) {
         var oStichWinner = getStichWinnerCard(oGame.aStichCards);
         if (oGame.aStichCards.length === oGame.aPlayers.length) {
             // stich fertig
+            emitGameBroadcast('laststich', oGame.aStichCards);
             oGame.iStichCount++;
             var iWinnerIndex = oGame.aPlayers.findIndex(x => x.id === oStichWinner.playerid);
             oGame.iStecherIdx = iWinnerIndex;
@@ -311,38 +317,47 @@ io.on('connection', function(socket) {
             } else {
                 // runde vorbei
                 oGame.iStichCount = 0;
+                // zuerst punkte zählen
                 oGame.aPlayers.forEach(function(player, index) {
                     var points = 0;
                     player.stiche.forEach(function(stich) {
                         points += stich.card.eyes;
                     })
-                    if (iWinnerIndex = index) {
+                    // TODO WTF IS HAPPENING HERE
+                    if (iWinnerIndex === index) {
                         points += 10;
                     }
                     points = Math.round(points / 10) * 10;
-                    oGame.aPlayers[index].gamestats[oGame.iGameIdx].stichval = points;
-                    var gemeldet = oGame.aPlayers[index].gamestats[oGame.iGameIdx].meldung.punkte;
-                    if (oGame.aGameStats[oGame.iGameIdx].reizID === player.id) {
+                    player.gamestats[oGame.iGameIdx].stichval += points;
+                    if (oGame.aPlayers.length === 4) {
+                        var iKollegIdx = oGame.aPlayers.findIndex(x => x.id != player.id && x.team == player.team);
+                        oGame.aPlayers[iKollegIdx].gamestats[oGame.iGameIdx].stichval += points;
+                    }
+                });
+                // dann schauen obs gereicht hat (wird gebraucht für 4 playergame)
+                oGame.aPlayers.forEach(function(player, index) {
+                    var gemeldet = oGame.aPlayers[index].gamestats[oGame.iGameIdx].meldung; //passt
+                    var stiche = oGame.aPlayers[index].gamestats[oGame.iGameIdx].stichval; // fehlt bei 4
+                    var gereizt = oGame.aPlayers[index].gamestats[oGame.iGameIdx].reiz; // passt
+                    if (oGame.aGameStats[oGame.iGameIdx].reizID === player.id
+                        || oGame.aPlayers.length === 4 && player.team == oGame.aReizer[0].team) {
                         // check if geschafft
-                        var gereizt = oGame.aPlayers[index].gamestats[oGame.iGameIdx].reiz;
-                        if (points + gemeldet >= gereizt) {
-                            oGame.aPlayers[index].points += points + gemeldet;
+                        if (stiche + gemeldet >= gereizt) {
+                            oGame.aPlayers[index].points += stiche + gemeldet;
                         } else {
                             oGame.aPlayers[index].points -= gereizt + 100;
                         }
                     } else {
-                        if (points > 0) {
-                            oGame.aPlayers[index].points += points + gemeldet;
+                        if (stiche > 0) {
+                            oGame.aPlayers[index].points += stiche + gemeldet;
                         }
                     }
-
                 });
                 var oStich = {
                     stiche: oGame.aStichCards,
                     newstich: true
                 }
                 emitGameBroadcast('darfstechen', oStich);
-                // TODO: rundenende, sende stats / geschafft oder nit?
                 sendGameStats(true);
                 nextRound();
             }
@@ -716,23 +731,25 @@ io.on('connection', function(socket) {
         oCurrentGameStats.stats = {};
         oCurrentGameStats.points = {};
         oCurrentGameStats.roundEnd = bRoundend;
-        oGame.aPlayers.forEach(function(player) {
-            oCurrentGameStats.stats[player.name] = [];
-            player.gamestats.forEach(function(gamestat) {
-                oCurrentGameStats.stats[player.name].push({
-                    val: gamestat.reiz, 
-                    type: "Reiz"
-                });
-                oCurrentGameStats.stats[player.name].push({
-                    val: gamestat.meldung ? gamestat.meldung.punkte : 0,
-                    type: "Meldung"
-                });
-                oCurrentGameStats.stats[player.name].push({
-                    val: gamestat.stichval,
-                    type: "Stich"
-                });
-            }.bind(this));
-            oCurrentGameStats.points[player.name] = player.points;
+        oGame.aPlayers.forEach(function(player, index) {
+            if (oGame.aPlayers.length < 4 || index < 2) {
+                oCurrentGameStats.stats[player.name] = [];
+                player.gamestats.forEach(function(gamestat) {
+                    oCurrentGameStats.stats[player.name].push({
+                        val: gamestat.reiz, 
+                        type: "Reiz"
+                    });
+                    oCurrentGameStats.stats[player.name].push({
+                        val: gamestat.meldung,
+                        type: "Meldung"
+                    });
+                    oCurrentGameStats.stats[player.name].push({
+                        val: gamestat.stichval,
+                        type: "Stich"
+                    });
+                }.bind(this));
+                oCurrentGameStats.points[player.name] = player.points;
+            }
         }.bind(this));
         
         emitGameBroadcast('gamestats', oCurrentGameStats);
@@ -773,15 +790,13 @@ io.on('connection', function(socket) {
 
 // WICHTIG:
 
-// punktestand übersichtlicher
-// richtig rechnen
-
-// melden besser anzeigen
-
 // direkt "nab" drücken können wenn mans nicht schafft
+
+// sieges meldung 
 
 // dealer anzeigen
 // wer kommt raus
 
+// bei melden zu 3, oder 4. wenn jemand weg geht, dann passt auto wert von reiz input nicht. muss 10 höher
 
 // bei rundlauf nicht K und O als 4 gleiche zählen

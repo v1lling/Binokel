@@ -106,6 +106,10 @@
   display: flex;
   justify-content: space-evenly;
 }
+.clModal #idModalContent div {
+  overflow-x: hidden;
+  text-overflow: ellipsis;
+}
 .clModal #idModalContent label {
   border-top: 2px solid white;
 }
@@ -124,9 +128,12 @@
 .clTopMenu .clButtonStats,
 .clTopMenu .clButtonLastDab {
   background-size: contain;
+  -webkit-background-size: contain;
+  -webkit-background-repeat: no-repeat;
   background-repeat: no-repeat;
   height: 3rem;
   width: 3rem;
+  background-position: center;
 }
 .clTopMenu .clButtonStats {
   background-image: url(/static/img/stats.png);
@@ -163,7 +170,7 @@
   overflow: auto;
 }
 #idDivMeldungen .meldecardRow {
-  min-height: 15%;
+  height: 15%;
   padding-top: 0.5rem;
 }
 #idDivMeldungen .meldecardRow .meldecard {
@@ -204,6 +211,7 @@
   justify-content: center;
   overflow: hidden;
   word-break: break-all;
+  text-overflow: ellipsis;
 }
 .clPlayerName label.weggegangen {
   text-decoration: line-through;
@@ -238,6 +246,7 @@
   align-items: center;
 }
 .clGameplayActions #idDivReiz #idDivReizInput {
+  height: 50%;
   display: flex;
   justify-content: center;
   width: 40%;
@@ -650,6 +659,14 @@ body {
 body :focus {
   outline: none !important;
 }
+div,
+body,
+button,
+input,
+span,
+label {
+  touch-action: manipulation;
+}
 button {
   background: transparent;
   border-radius: 5px;
@@ -706,8 +723,5 @@ input {
   }
   body {
     background: #222222;
-  }
-  button {
-    touch-action: manipulation;
   }
 }
